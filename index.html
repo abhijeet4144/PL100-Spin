@@ -1,15 +1,1223 @@
-🦁
-PL 100
-Build your Premier League Century Side
-? Rules
-Can you reach 100 points?
-Spin to draw players from the Premier League era. Build a team of 11 that could dominate a 38-game season and achieve the legendary 100-point mark.
-HOW TO PLAY
-	•	Each spin reveals a player from a specific PL team and season
-	•	Build a 4-4-2: 1 GK · 4 DEF · 4 MID · 2 FWD
-	•	Accept or reject each player — rejected spins still count
-	•	Once your squad is full, simulate the season
-	•	Reach 100 points to join the century club
-	•	Stats drawn from Opta data across the Premier League era
-Start Spinning
-PL100 is an independent project for entertainment purposes only and is not affiliated in any manner with the English Premier League.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PL 100 — Build Your Century Side</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;--surface:#1a1a2e;--card:#22223a;--border:#2e2e50;
+  --purple:#37003c;--accent:#00ff87;--gold:#ffd700;--red:#e63946;
+  --text:#f0f0f0;--muted:#888;--radius:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── HEADER ── */
+#header{background:linear-gradient(135deg,#37003c,#1a0020);padding:14px 24px;display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--accent);position:sticky;top:0;z-index:100}
+#header .lion{font-size:2rem}
+#header h1{font-size:1.4rem;font-weight:800;letter-spacing:1px;color:#fff}
+#header h1 span{color:var(--accent)}
+#header .subtitle{font-size:.75rem;color:var(--muted);margin-top:2px}
+#header .spins-badge{margin-left:auto;background:rgba(0,255,135,.12);border:1px solid var(--accent);border-radius:20px;padding:4px 14px;font-size:.8rem;color:var(--accent)}
+
+/* ── SCREENS ── */
+.screen{display:none;padding:24px;max-width:1200px;margin:0 auto}
+.screen.active{display:block}
+
+/* INTRO */
+#intro{text-align:center;padding-top:80px}
+#intro h2{font-size:3rem;font-weight:900;margin-bottom:12px}
+#intro h2 span{color:var(--accent)}
+#intro p{color:var(--muted);font-size:1.1rem;max-width:560px;margin:0 auto 32px;line-height:1.7}
+.rules{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:640px;margin:0 auto 40px;text-align:left}
+.rules h3{color:var(--gold);font-size:.9rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.rules ul{list-style:none;display:grid;gap:8px}
+.rules li{font-size:.9rem;color:#ccc;padding-left:20px;position:relative}
+.rules li::before{content:"▸";position:absolute;left:0;color:var(--accent)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#00cc6a);color:#000;font-weight:800;font-size:1.1rem;border:none;border-radius:30px;padding:16px 48px;cursor:pointer;transition:transform .15s,box-shadow .15s;letter-spacing:.5px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,255,135,.35)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{background:transparent;color:var(--text);font-weight:600;font-size:.95rem;border:1px solid var(--border);border-radius:30px;padding:10px 28px;cursor:pointer;transition:border-color .15s,color .15s}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:transparent;color:var(--red);font-weight:600;font-size:.85rem;border:1px solid var(--red);border-radius:20px;padding:6px 18px;cursor:pointer;transition:background .15s}
+.btn-danger:hover{background:rgba(230,57,70,.15)}
+.btn-small{font-size:.78rem;padding:5px 14px;border-radius:16px}
+
+/* ── MAIN GAME LAYOUT ── */
+#game{display:none}
+#game.active{display:grid;grid-template-columns:380px 1fr;gap:24px;padding:24px;max-width:1200px;margin:0 auto}
+
+/* SPIN PANEL */
+#spin-panel{display:flex;flex-direction:column;gap:16px}
+.panel-title{font-size:.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:4px}
+
+/* Slot machine */
+#slot-machine{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:relative;height:160px}
+#slot-track{position:absolute;width:100%;transition:none;will-change:transform}
+.slot-item{height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;border-bottom:1px solid var(--border)}
+.slot-item .si-pos{font-size:.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:4px}
+.slot-item .si-name{font-size:1.3rem;font-weight:900;text-align:center;line-height:1.2;margin-bottom:6px}
+.slot-item .si-team{font-size:.82rem;font-weight:600;margin-bottom:2px}
+.slot-item .si-season{font-size:.72rem;color:var(--muted)}
+.slot-machine-mask{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,var(--surface) 0%,transparent 30%,transparent 70%,var(--surface) 100%)}
+
+/* Spin controls */
+#spin-controls{display:flex;gap:10px}
+#spin-controls .btn-primary{flex:1}
+#spin-controls .btn-secondary{flex:1}
+
+/* Player reveal card */
+#reveal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:none}
+#reveal-card.visible{display:block}
+.rc-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+.rc-badge{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;font-weight:900}
+.rc-info h2{font-size:1.3rem;font-weight:900;line-height:1.2}
+.rc-info .rc-meta{font-size:.8rem;color:var(--muted);margin-top:3px}
+.pos-pill{display:inline-block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:12px;margin-right:6px}
+.pos-GK{background:rgba(255,215,0,.2);color:var(--gold);border:1px solid var(--gold)}
+.pos-DEF{background:rgba(0,100,255,.2);color:#5599ff;border:1px solid #5599ff}
+.pos-MID{background:rgba(0,200,100,.2);color:#00c864;border:1px solid #00c864}
+.pos-FWD{background:rgba(230,57,70,.2);color:#ff6b78;border:1px solid #ff6b78}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-box{background:var(--surface);border-radius:8px;padding:10px}
+.stat-box .sb-val{font-size:1.4rem;font-weight:900;color:var(--accent)}
+.stat-box .sb-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.rc-actions{display:flex;gap:10px}
+.rc-actions .btn-primary{flex:1}
+.rc-actions .btn-danger{flex:1}
+.slot-full-msg{background:rgba(230,57,70,.1);border:1px solid var(--red);border-radius:8px;padding:10px;font-size:.82rem;color:var(--red);margin-bottom:12px;display:none}
+.slot-full-msg.show{display:block}
+
+/* ── TEAM PANEL ── */
+#team-panel{display:flex;flex-direction:column;gap:16px}
+.pitch{background:linear-gradient(180deg,#1a4a1a 0%,#1e5c1e 15%,#1a4a1a 30%,#1e5c1e 45%,#1a4a1a 60%,#1e5c1e 75%,#1a4a1a 90%,#1e5c1e 100%);border-radius:var(--radius);border:2px solid rgba(255,255,255,.08);padding:16px;position:relative;min-height:480px}
+.pitch-lines{position:absolute;inset:0;border-radius:var(--radius);overflow:hidden;pointer-events:none}
+.pitch-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100px;height:100px;border:1px solid rgba(255,255,255,.1);border-radius:50%}
+.pitch-halfway{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,.08)}
+.formation-row{display:flex;justify-content:center;gap:10px;margin-bottom:14px}
+.formation-row:last-child{margin-bottom:0}
+.pos-slot{width:72px;height:72px;border-radius:50%;border:2px dashed rgba(255,255,255,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;transition:border-color .2s;position:relative;flex-shrink:0}
+.pos-slot.filled{border-style:solid;border-color:var(--accent)}
+.pos-slot.filled:hover{border-color:var(--red);cursor:pointer}
+.pos-slot .ps-label{font-size:.55rem;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.4)}
+.pos-slot.filled .ps-label{color:var(--accent);font-size:.5rem}
+.pos-slot .ps-name{font-size:.58rem;font-weight:700;text-align:center;line-height:1.2;color:#fff;margin-top:2px}
+.pos-slot .ps-remove{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--red);border-radius:50%;font-size:.55rem;display:none;align-items:center;justify-content:center;color:#fff;cursor:pointer}
+.pos-slot.filled:hover .ps-remove{display:flex}
+.pos-slot .ps-rating{position:absolute;bottom:-6px;font-size:.6rem;font-weight:800;color:var(--gold)}
+
+/* Team summary bar */
+.team-summary{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.ts-title{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px}
+.ts-bars{display:grid;gap:8px}
+.ts-bar-row{display:flex;align-items:center;gap:10px}
+.ts-bar-label{font-size:.75rem;width:60px;color:var(--muted)}
+.ts-bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ts-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.ts-bar-val{font-size:.75rem;font-weight:700;width:36px;text-align:right}
+.ts-projection{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.ts-proj-label{font-size:.75rem;color:var(--muted)}
+.ts-proj-val{font-size:1.1rem;font-weight:900;color:var(--gold)}
+
+.simulate-section{text-align:center}
+.simulate-section .btn-primary{font-size:1.2rem;padding:18px 60px;opacity:.4;pointer-events:none}
+.simulate-section .btn-primary.ready{opacity:1;pointer-events:auto}
+.simulate-section p{font-size:.78rem;color:var(--muted);margin-top:8px}
+
+/* ── RESULTS SCREEN ── */
+#results{display:none}
+#results.active{display:block;padding:24px;max-width:900px;margin:0 auto}
+.results-header{text-align:center;margin-bottom:32px}
+.results-header .century-badge{display:inline-block;font-size:3.5rem;font-weight:900;margin-bottom:8px}
+.results-header .century-badge.success{color:var(--accent);text-shadow:0 0 40px rgba(0,255,135,.5)}
+.results-header .century-badge.failure{color:var(--red);text-shadow:0 0 40px rgba(230,57,70,.4)}
+.results-header h2{font-size:1.8rem;font-weight:900}
+.results-header p{color:var(--muted);margin-top:6px}
+.points-display{background:var(--surface);border:2px solid var(--border);border-radius:20px;padding:32px;text-align:center;margin-bottom:24px;position:relative;overflow:hidden}
+.points-display.success{border-color:var(--accent);background:linear-gradient(135deg,rgba(0,255,135,.08),var(--surface))}
+.points-display.failure{border-color:var(--red);background:linear-gradient(135deg,rgba(230,57,70,.08),var(--surface))}
+.pd-points{font-size:5rem;font-weight:900;line-height:1}
+.pd-label{font-size:.85rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:4px}
+.pd-record{font-size:.8rem;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.rg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.rg-val{font-size:2rem;font-weight:900}
+.rg-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:4px}
+.squad-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px}
+.squad-list h3{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px}
+.squad-pos-group{margin-bottom:14px}
+.squad-pos-group h4{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.squad-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.squad-row:last-child{border-bottom:none}
+.squad-row .sr-name{font-weight:700;font-size:.9rem}
+.squad-row .sr-team{font-size:.78rem;color:var(--muted)}
+.squad-row .sr-season{font-size:.72rem;color:var(--muted)}
+.squad-row .sr-stat{margin-left:auto;font-size:.78rem;color:var(--accent)}
+.rating-bars{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px}
+.results-actions{display:flex;gap:12px;justify-content:center}
+
+/* ── HISTORY BAR ── */
+.pts-bar-container{margin-top:8px}
+.pts-bar-wrapper{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:.72rem}
+.pts-bar-name{width:120px;color:var(--muted);text-align:right}
+.pts-bar-track{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+.pts-bar-fill{height:100%;border-radius:5px}
+.pts-bar-pts{width:36px;font-weight:700}
+.my-team-row .pts-bar-fill{background:var(--accent)}
+.my-team-row .pts-bar-name{color:var(--accent);font-weight:700}
+
+/* ── SKIP DISABLED ── */
+.skip-disabled{opacity:.4;cursor:not-allowed !important}
+.skip-disabled:hover{background:transparent}
+
+/* ── RULES MODAL ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:20px}
+#modal-overlay.open{display:flex}
+#modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:560px;width:100%;padding:28px;position:relative;max-height:90vh;overflow-y:auto}
+#modal-box h2{font-size:1.4rem;font-weight:900;margin-bottom:4px}
+#modal-box .modal-sub{font-size:.82rem;color:var(--muted);margin-bottom:20px}
+.modal-section{margin-bottom:18px}
+.modal-section h3{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:10px}
+.modal-section ul{list-style:none;display:grid;gap:7px}
+.modal-section li{font-size:.88rem;color:#ccc;padding-left:18px;position:relative;line-height:1.5}
+.modal-section li::before{content:"▸";position:absolute;left:0;color:var(--muted)}
+.modal-section li strong{color:#fff}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--border);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--red);color:#fff}
+.modal-footer{margin-top:20px;text-align:center}
+#header .rules-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:16px;padding:4px 12px;font-size:.75rem;cursor:pointer;transition:border-color .15s,color .15s;margin-left:10px}
+#header .rules-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── TRANSITIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease forwards}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulsing{animation:pulse 1s infinite}
+@keyframes spin-fast{0%{transform:translateY(0)}100%{transform:translateY(-100%)}}
+@keyframes countUp{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.count-up{animation:countUp .4s ease forwards}
+
+/* ── RESPONSIVE ── */
+@media(max-width:800px){
+  #game{grid-template-columns:1fr}
+  .results-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="lion">🦁</div>
+  <div>
+    <h1>PL <span>100</span></h1>
+    <div class="subtitle">Build your Premier League Century Side</div>
+  </div>
+  <button class="rules-btn" onclick="openModal()">? Rules</button>
+  <div class="spins-badge" id="spins-badge" style="display:none">Spins: <span id="spin-count">0</span> · Skips left: <span id="skips-left">3</span></div>
+</div>
+
+<!-- RULES MODAL -->
+<div id="modal-overlay" onclick="closeModalOutside(event)">
+  <div id="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>🦁 PL 100 — How to Play</h2>
+    <div class="modal-sub">Build the greatest Premier League XI in history</div>
+
+    <div class="modal-section">
+      <h3>Objective</h3>
+      <ul>
+        <li>Assemble a squad that simulates to <strong>100+ points</strong> across a 38-game season — matching Man City's all-time record.</li>
+      </ul>
+    </div>
+
+    <div class="modal-section">
+      <h3>Formation</h3>
+      <ul>
+        <li><strong>1 Goalkeeper</strong> — Clean Sheets &amp; Save %</li>
+        <li><strong>4 Defenders</strong> — Clean Sheets, Tackles &amp; Interceptions</li>
+        <li><strong>4 Midfielders</strong> — Pass Acc %, Tackles, Interceptions, Chances Created, Goals &amp; Assists</li>
+        <li><strong>2 Forwards</strong> — Goals &amp; Chances Created</li>
+      </ul>
+    </div>
+
+    <div class="modal-section">
+      <h3>The Spin</h3>
+      <ul>
+        <li>Each spin randomly reveals a player from the Premier League era (1992–2024), shown with their club and season.</li>
+        <li>Press <strong>Add to Team</strong> to place them in your squad.</li>
+        <li>Press <strong>Skip</strong> to pass — but you only get <strong>3 skips</strong> per game. Use them wisely.</li>
+        <li>If a slot is already full or you've hit the club limit, the spin is free — it won't cost you a skip.</li>
+      </ul>
+    </div>
+
+    <div class="modal-section">
+      <h3>Squad Rules</h3>
+      <ul>
+        <li>Maximum <strong>4 players from any one Premier League club</strong>.</li>
+        <li>You can <strong>remove a player</strong> from the pitch by hovering their slot and clicking ✕, freeing up the position.</li>
+        <li>Once all 11 slots are filled, hit <strong>Simulate Season</strong>.</li>
+      </ul>
+    </div>
+
+    <div class="modal-section">
+      <h3>Simulation</h3>
+      <ul>
+        <li>Your team's stats are converted into Attack, Defense and Control ratings.</li>
+        <li>A 38-game season is simulated using a Poisson goal model (20 runs averaged).</li>
+        <li>Results are compared against Premier League history.</li>
+      </ul>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="closeModal()" style="font-size:.95rem;padding:12px 36px">Got it — let's play!</button>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div id="intro" class="screen active">
+  <h2>Can you reach <span>100</span> points?</h2>
+  <p>Spin to draw players from the Premier League era. Build a team of 11 that could dominate a 38-game season and achieve the legendary 100-point mark.</p>
+  <div class="rules">
+    <h3>How to Play</h3>
+    <ul>
+      <li>Each spin reveals a player from a specific PL team and season</li>
+      <li>Build a 4-4-2: 1 GK · 4 DEF · 4 MID · 2 FWD</li>
+      <li>Accept or reject each player — rejected spins still count</li>
+      <li>Once your squad is full, simulate the season</li>
+      <li>Reach <strong>100 points</strong> to join the century club</li>
+      <li>Stats drawn from Opta data across the Premier League era</li>
+    </ul>
+  </div>
+  <button class="btn-primary" onclick="startGame()">Start Spinning</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <!-- LEFT: Spin Panel -->
+  <div id="spin-panel">
+    <div class="panel-title">Spin Machine</div>
+
+    <div id="slot-machine">
+      <div id="slot-track"></div>
+      <div class="slot-machine-mask"></div>
+    </div>
+
+    <div id="spin-controls">
+      <button class="btn-primary" id="spin-btn" onclick="doSpin()">🏆 SPIN</button>
+      <button class="btn-secondary" id="spin-again-btn" onclick="doSpin()" style="display:none">Spin Again</button>
+    </div>
+
+    <!-- Revealed player card -->
+    <div id="reveal-card">
+      <div class="slot-full-msg" id="slot-full-msg"></div>
+      <div class="rc-header">
+        <div class="rc-badge" id="rc-badge"></div>
+        <div class="rc-info">
+          <h2 id="rc-name"></h2>
+          <div class="rc-meta" id="rc-meta"></div>
+        </div>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="rc-actions" id="rc-actions"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Team Panel -->
+  <div id="team-panel">
+    <div class="panel-title">Your Squad</div>
+
+    <div class="pitch">
+      <div class="pitch-lines">
+        <div class="pitch-center"></div>
+        <div class="pitch-halfway"></div>
+      </div>
+      <div style="position:relative;z-index:1">
+        <div class="formation-row" id="row-gk"></div>
+        <div class="formation-row" id="row-def"></div>
+        <div class="formation-row" id="row-mid"></div>
+        <div class="formation-row" id="row-fwd"></div>
+      </div>
+    </div>
+
+    <div class="team-summary" id="team-summary">
+      <div class="ts-title">Team Ratings</div>
+      <div class="ts-bars">
+        <div class="ts-bar-row">
+          <div class="ts-bar-label">Attack</div>
+          <div class="ts-bar-track"><div class="ts-bar-fill" id="bar-attack" style="width:0%;background:var(--red)"></div></div>
+          <div class="ts-bar-val" id="val-attack">—</div>
+        </div>
+        <div class="ts-bar-row">
+          <div class="ts-bar-label">Defense</div>
+          <div class="ts-bar-track"><div class="ts-bar-fill" id="bar-defense" style="width:0%;background:#5599ff"></div></div>
+          <div class="ts-bar-val" id="val-defense">—</div>
+        </div>
+        <div class="ts-bar-row">
+          <div class="ts-bar-label">Control</div>
+          <div class="ts-bar-track"><div class="ts-bar-fill" id="bar-control" style="width:0%;background:var(--gold)"></div></div>
+          <div class="ts-bar-val" id="val-control">—</div>
+        </div>
+      </div>
+      <div class="ts-projection" id="ts-projection" style="display:none">
+        <div class="ts-proj-label">Projected points (38 games)</div>
+        <div class="ts-proj-val" id="proj-val">—</div>
+      </div>
+    </div>
+
+    <div class="simulate-section">
+      <button class="btn-primary" id="simulate-btn" onclick="runSimulation()">⚽ Simulate Season</button>
+      <p id="sim-hint">Fill all 11 positions to simulate</p>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen">
+  <div class="results-header">
+    <div class="century-badge" id="res-badge"></div>
+    <h2 id="res-title"></h2>
+    <p id="res-subtitle"></p>
+  </div>
+
+  <div class="points-display" id="points-display">
+    <div class="pd-points" id="pd-points"></div>
+    <div class="pd-label">Points across 38 games</div>
+    <div class="pd-record" id="pd-record"></div>
+  </div>
+
+  <div class="results-grid">
+    <div class="rg-card"><div class="rg-val" id="res-wins" style="color:var(--accent)"></div><div class="rg-label">Wins</div></div>
+    <div class="rg-card"><div class="rg-val" id="res-draws" style="color:var(--gold)"></div><div class="rg-label">Draws</div></div>
+    <div class="rg-card"><div class="rg-val" id="res-losses" style="color:var(--red)"></div><div class="rg-label">Losses</div></div>
+    <div class="rg-card"><div class="rg-val" id="res-gd"></div><div class="rg-label">Goal Diff</div></div>
+  </div>
+
+  <div class="rating-bars">
+    <h3 style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:16px">Historical Context</h3>
+    <div id="history-bars"></div>
+  </div>
+
+  <div class="squad-list">
+    <h3>Your Squad</h3>
+    <div id="final-squad"></div>
+  </div>
+
+  <div class="results-actions">
+    <button class="btn-primary" onclick="startGame()">🏆 Spin Again</button>
+    <button class="btn-secondary" onclick="backToTeam()">← Edit Squad</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PLAYER DATABASE
+// ============================================================
+const PLAYERS = [
+  // ── GOALKEEPERS ──
+  {id:'sch9394',name:'Peter Schmeichel',team:'Manchester United',season:'1993–94',pos:'GK',color:'#da291c',stats:{cleanSheets:22,savePct:78}},
+  {id:'sch9697',name:'Peter Schmeichel',team:'Manchester United',season:'1996–97',pos:'GK',color:'#da291c',stats:{cleanSheets:24,savePct:79}},
+  {id:'sea9798',name:'David Seaman',team:'Arsenal',season:'1997–98',pos:'GK',color:'#ef0107',stats:{cleanSheets:17,savePct:76}},
+  {id:'cec0405',name:'Petr Čech',team:'Chelsea',season:'2004–05',pos:'GK',color:'#034694',stats:{cleanSheets:24,savePct:82}},
+  {id:'cec0506',name:'Petr Čech',team:'Chelsea',season:'2005–06',pos:'GK',color:'#034694',stats:{cleanSheets:21,savePct:80}},
+  {id:'vds0809',name:'Edwin van der Sar',team:'Manchester United',season:'2008–09',pos:'GK',color:'#da291c',stats:{cleanSheets:21,savePct:80}},
+  {id:'har1112',name:'Joe Hart',team:'Manchester City',season:'2011–12',pos:'GK',color:'#6cabdd',stats:{cleanSheets:18,savePct:79}},
+  {id:'deg1718',name:'David de Gea',team:'Manchester United',season:'2017–18',pos:'GK',color:'#da291c',stats:{cleanSheets:18,savePct:83}},
+  {id:'ali1819',name:'Alisson Becker',team:'Liverpool',season:'2018–19',pos:'GK',color:'#c8102e',stats:{cleanSheets:21,savePct:83}},
+  {id:'ede1718',name:'Ederson',team:'Manchester City',season:'2017–18',pos:'GK',color:'#6cabdd',stats:{cleanSheets:16,savePct:80}},
+  {id:'ede1920',name:'Ederson',team:'Manchester City',season:'2019–20',pos:'GK',color:'#6cabdd',stats:{cleanSheets:16,savePct:78}},
+  {id:'pop2223',name:'Nick Pope',team:'Newcastle United',season:'2022–23',pos:'GK',color:'#241f20',stats:{cleanSheets:20,savePct:80}},
+
+  // ── DEFENDERS ──
+  {id:'ada9798',name:'Tony Adams',team:'Arsenal',season:'1997–98',pos:'DEF',color:'#ef0107',stats:{cleanSheets:17,tackles:85,interceptions:75}},
+  {id:'keo0102',name:'Martin Keown',team:'Arsenal',season:'2001–02',pos:'DEF',color:'#ef0107',stats:{cleanSheets:15,tackles:90,interceptions:80}},
+  {id:'cam0102',name:'Sol Campbell',team:'Arsenal',season:'2001–02',pos:'DEF',color:'#ef0107',stats:{cleanSheets:15,tackles:70,interceptions:82}},
+  {id:'ter0405',name:'John Terry',team:'Chelsea',season:'2004–05',pos:'DEF',color:'#034694',stats:{cleanSheets:24,tackles:80,interceptions:88}},
+  {id:'ter0506',name:'John Terry',team:'Chelsea',season:'2005–06',pos:'DEF',color:'#034694',stats:{cleanSheets:21,tackles:78,interceptions:85}},
+  {id:'fer0708',name:'Rio Ferdinand',team:'Manchester United',season:'2007–08',pos:'DEF',color:'#da291c',stats:{cleanSheets:21,tackles:65,interceptions:85}},
+  {id:'vid0809',name:'Nemanja Vidić',team:'Manchester United',season:'2008–09',pos:'DEF',color:'#da291c',stats:{cleanSheets:21,tackles:95,interceptions:90}},
+  {id:'vid1112',name:'Nemanja Vidić',team:'Manchester United',season:'2011–12',pos:'DEF',color:'#da291c',stats:{cleanSheets:17,tackles:90,interceptions:88}},
+  {id:'car0405',name:'Jamie Carragher',team:'Liverpool',season:'2004–05',pos:'DEF',color:'#c8102e',stats:{cleanSheets:18,tackles:75,interceptions:92}},
+  {id:'col0304',name:'Ashley Cole',team:'Arsenal',season:'2003–04',pos:'DEF',color:'#ef0107',stats:{cleanSheets:15,tackles:92,interceptions:78}},
+  {id:'col0910',name:'Ashley Cole',team:'Chelsea',season:'2009–10',pos:'DEF',color:'#034694',stats:{cleanSheets:14,tackles:88,interceptions:75}},
+  {id:'nav0203',name:'Gary Neville',team:'Manchester United',season:'2002–03',pos:'DEF',color:'#da291c',stats:{cleanSheets:15,tackles:82,interceptions:72}},
+  {id:'eva0708',name:'Patrice Evra',team:'Manchester United',season:'2007–08',pos:'DEF',color:'#da291c',stats:{cleanSheets:21,tackles:90,interceptions:72}},
+  {id:'vvd1819',name:'Virgil van Dijk',team:'Liverpool',season:'2018–19',pos:'DEF',color:'#c8102e',stats:{cleanSheets:21,tackles:58,interceptions:80}},
+  {id:'vvd1920',name:'Virgil van Dijk',team:'Liverpool',season:'2019–20',pos:'DEF',color:'#c8102e',stats:{cleanSheets:13,tackles:55,interceptions:78}},
+  {id:'wal1718',name:'Kyle Walker',team:'Manchester City',season:'2017–18',pos:'DEF',color:'#6cabdd',stats:{cleanSheets:16,tackles:88,interceptions:72}},
+  {id:'rob1819',name:'Andrew Robertson',team:'Liverpool',season:'2018–19',pos:'DEF',color:'#c8102e',stats:{cleanSheets:21,tackles:85,interceptions:75}},
+  {id:'taa1920',name:'Trent Alexander-Arnold',team:'Liverpool',season:'2019–20',pos:'DEF',color:'#c8102e',stats:{cleanSheets:13,tackles:55,interceptions:52}},
+  {id:'kom1112',name:'Vincent Kompany',team:'Manchester City',season:'2011–12',pos:'DEF',color:'#6cabdd',stats:{cleanSheets:18,tackles:80,interceptions:88}},
+  {id:'dia2021',name:'Rúben Dias',team:'Manchester City',season:'2020–21',pos:'DEF',color:'#6cabdd',stats:{cleanSheets:15,tackles:65,interceptions:80}},
+  {id:'gal0304',name:'William Gallas',team:'Chelsea',season:'2003–04',pos:'DEF',color:'#034694',stats:{cleanSheets:15,tackles:72,interceptions:82}},
+  {id:'bai1213',name:'Leighton Baines',team:'Everton',season:'2012–13',pos:'DEF',color:'#003399',stats:{cleanSheets:12,tackles:75,interceptions:65}},
+  {id:'des0102',name:'Marcel Desailly',team:'Chelsea',season:'2001–02',pos:'DEF',color:'#034694',stats:{cleanSheets:12,tackles:75,interceptions:80}},
+
+  // ── MIDFIELDERS ──
+  {id:'sch9900',name:'Paul Scholes',team:'Manchester United',season:'1999–00',pos:'MID',color:'#da291c',stats:{passAccuracy:88,tackles:72,interceptions:52,chancesCreated:55,goals:6,assists:12}},
+  {id:'sch0203',name:'Paul Scholes',team:'Manchester United',season:'2002–03',pos:'MID',color:'#da291c',stats:{passAccuracy:89,tackles:68,interceptions:48,chancesCreated:60,goals:14,assists:10}},
+  {id:'kea9900',name:'Roy Keane',team:'Manchester United',season:'1999–00',pos:'MID',color:'#da291c',stats:{passAccuracy:83,tackles:98,interceptions:82,chancesCreated:40,goals:5,assists:8}},
+  {id:'vie0102',name:'Patrick Vieira',team:'Arsenal',season:'2001–02',pos:'MID',color:'#ef0107',stats:{passAccuracy:82,tackles:105,interceptions:88,chancesCreated:45,goals:3,assists:8}},
+  {id:'vie0304',name:'Patrick Vieira',team:'Arsenal',season:'2003–04',pos:'MID',color:'#ef0107',stats:{passAccuracy:83,tackles:100,interceptions:85,chancesCreated:48,goals:3,assists:6}},
+  {id:'lam0405',name:'Frank Lampard',team:'Chelsea',season:'2004–05',pos:'MID',color:'#034694',stats:{passAccuracy:86,tackles:75,interceptions:62,chancesCreated:78,goals:13,assists:9}},
+  {id:'lam0506',name:'Frank Lampard',team:'Chelsea',season:'2005–06',pos:'MID',color:'#034694',stats:{passAccuracy:87,tackles:72,interceptions:60,chancesCreated:80,goals:16,assists:8}},
+  {id:'ger0506',name:'Steven Gerrard',team:'Liverpool',season:'2005–06',pos:'MID',color:'#c8102e',stats:{passAccuracy:83,tackles:88,interceptions:72,chancesCreated:72,goals:10,assists:13}},
+  {id:'ger0809',name:'Steven Gerrard',team:'Liverpool',season:'2008–09',pos:'MID',color:'#c8102e',stats:{passAccuracy:85,tackles:82,interceptions:68,chancesCreated:75,goals:16,assists:11}},
+  {id:'car1213',name:'Michael Carrick',team:'Manchester United',season:'2012–13',pos:'MID',color:'#da291c',stats:{passAccuracy:92,tackles:65,interceptions:55,chancesCreated:40,goals:2,assists:6}},
+  {id:'tou1314',name:'Yaya Touré',team:'Manchester City',season:'2013–14',pos:'MID',color:'#6cabdd',stats:{passAccuracy:86,tackles:80,interceptions:65,chancesCreated:72,goals:20,assists:9}},
+  {id:'deb1718',name:'Kevin De Bruyne',team:'Manchester City',season:'2017–18',pos:'MID',color:'#6cabdd',stats:{passAccuracy:88,tackles:55,interceptions:45,chancesCreated:120,goals:8,assists:16}},
+  {id:'deb1920',name:'Kevin De Bruyne',team:'Manchester City',season:'2019–20',pos:'MID',color:'#6cabdd',stats:{passAccuracy:89,tackles:50,interceptions:40,chancesCreated:132,goals:13,assists:20}},
+  {id:'sil1112',name:'David Silva',team:'Manchester City',season:'2011–12',pos:'MID',color:'#6cabdd',stats:{passAccuracy:90,tackles:50,interceptions:45,chancesCreated:92,goals:6,assists:12}},
+  {id:'haz1415',name:'Eden Hazard',team:'Chelsea',season:'2014–15',pos:'MID',color:'#034694',stats:{passAccuracy:85,tackles:40,interceptions:35,chancesCreated:96,goals:14,assists:9}},
+  {id:'fab0708',name:'Cesc Fàbregas',team:'Arsenal',season:'2007–08',pos:'MID',color:'#ef0107',stats:{passAccuracy:87,tackles:55,interceptions:50,chancesCreated:105,goals:7,assists:14}},
+  {id:'kan1617',name:"N'Golo Kanté",team:'Chelsea',season:'2016–17',pos:'MID',color:'#034694',stats:{passAccuracy:88,tackles:115,interceptions:98,chancesCreated:38,goals:1,assists:2}},
+  {id:'kan1516',name:"N'Golo Kanté",team:'Leicester City',season:'2015–16',pos:'MID',color:'#003090',stats:{passAccuracy:86,tackles:108,interceptions:95,chancesCreated:35,goals:1,assists:1}},
+  {id:'ozi1516',name:'Mesut Özil',team:'Arsenal',season:'2015–16',pos:'MID',color:'#ef0107',stats:{passAccuracy:89,tackles:30,interceptions:25,chancesCreated:116,goals:6,assists:19}},
+  {id:'bal1213',name:'Gareth Bale',team:'Tottenham Hotspur',season:'2012–13',pos:'FWD',color:'#132257',stats:{goals:21,assists:9,chancesCreated:88}},
+  {id:'ron0708',name:'Cristiano Ronaldo',team:'Manchester United',season:'2007–08',pos:'FWD',color:'#da291c',stats:{goals:31,assists:6,chancesCreated:95}},
+  {id:'pet9798',name:'Emmanuel Petit',team:'Arsenal',season:'1997–98',pos:'MID',color:'#ef0107',stats:{passAccuracy:83,tackles:92,interceptions:78,chancesCreated:45,goals:3,assists:8}},
+  {id:'pir0304',name:'Robert Pires',team:'Arsenal',season:'2003–04',pos:'MID',color:'#ef0107',stats:{passAccuracy:83,tackles:45,interceptions:40,chancesCreated:82,goals:14,assists:10}},
+  {id:'mod1112',name:'Luka Modrić',team:'Tottenham Hotspur',season:'2011–12',pos:'MID',color:'#132257',stats:{passAccuracy:87,tackles:65,interceptions:60,chancesCreated:78,goals:4,assists:7}},
+  {id:'san1415',name:'Alexis Sánchez',team:'Arsenal',season:'2014–15',pos:'FWD',color:'#ef0107',stats:{goals:16,assists:9,chancesCreated:92}},
+  {id:'bru1920',name:'Bruno Fernandes',team:'Manchester United',season:'2019–20',pos:'MID',color:'#da291c',stats:{passAccuracy:84,tackles:55,interceptions:40,chancesCreated:108,goals:12,assists:8}},
+  {id:'fod2223',name:'Phil Foden',team:'Manchester City',season:'2022–23',pos:'MID',color:'#6cabdd',stats:{passAccuracy:87,tackles:45,interceptions:35,chancesCreated:98,goals:11,assists:5}},
+  {id:'gun2021',name:'İlkay Gündoğan',team:'Manchester City',season:'2020–21',pos:'MID',color:'#6cabdd',stats:{passAccuracy:89,tackles:60,interceptions:50,chancesCreated:78,goals:13,assists:7}},
+  {id:'sal1920m',name:'Mohamed Salah',team:'Liverpool',season:'2019–20',pos:'MID',color:'#c8102e',stats:{passAccuracy:81,tackles:32,interceptions:22,chancesCreated:85,goals:19,assists:10}},
+  {id:'ste1819',name:'Raheem Sterling',team:'Manchester City',season:'2018–19',pos:'MID',color:'#6cabdd',stats:{passAccuracy:82,tackles:38,interceptions:28,chancesCreated:82,goals:17,assists:10}},
+  {id:'mah1819',name:'Riyad Mahrez',team:'Manchester City',season:'2018–19',pos:'MID',color:'#6cabdd',stats:{passAccuracy:82,tackles:35,interceptions:25,chancesCreated:86,goals:11,assists:7}},
+
+  // ── FORWARDS ──
+  {id:'she9495',name:'Alan Shearer',team:'Blackburn Rovers',season:'1994–95',pos:'FWD',color:'#009ee0',stats:{goals:34,assists:8,chancesCreated:40}},
+  {id:'she9596',name:'Alan Shearer',team:'Blackburn Rovers',season:'1995–96',pos:'FWD',color:'#009ee0',stats:{goals:31,assists:7,chancesCreated:42}},
+  {id:'col9394',name:'Andrew Cole',team:'Newcastle United',season:'1993–94',pos:'FWD',color:'#241f20',stats:{goals:34,assists:9,chancesCreated:38}},
+  {id:'fow9596',name:'Robbie Fowler',team:'Liverpool',season:'1995–96',pos:'FWD',color:'#c8102e',stats:{goals:28,assists:8,chancesCreated:42}},
+  {id:'fer9596',name:'Les Ferdinand',team:'Newcastle United',season:'1995–96',pos:'FWD',color:'#241f20',stats:{goals:25,assists:7,chancesCreated:45}},
+  {id:'owe9899',name:'Michael Owen',team:'Liverpool',season:'1998–99',pos:'FWD',color:'#c8102e',stats:{goals:18,assists:6,chancesCreated:40}},
+  {id:'hen0304',name:'Thierry Henry',team:'Arsenal',season:'2003–04',pos:'FWD',color:'#ef0107',stats:{goals:30,assists:20,chancesCreated:82}},
+  {id:'hen0203',name:'Thierry Henry',team:'Arsenal',season:'2002–03',pos:'FWD',color:'#ef0107',stats:{goals:24,assists:10,chancesCreated:75}},
+  {id:'van0203',name:'Ruud van Nistelrooy',team:'Manchester United',season:'2002–03',pos:'FWD',color:'#da291c',stats:{goals:25,assists:5,chancesCreated:40}},
+  {id:'roo0910',name:'Wayne Rooney',team:'Manchester United',season:'2009–10',pos:'FWD',color:'#da291c',stats:{goals:26,assists:9,chancesCreated:58}},
+  {id:'roo1112',name:'Wayne Rooney',team:'Manchester United',season:'2011–12',pos:'FWD',color:'#da291c',stats:{goals:27,assists:12,chancesCreated:62}},
+  {id:'dro0910',name:'Didier Drogba',team:'Chelsea',season:'2009–10',pos:'FWD',color:'#034694',stats:{goals:29,assists:7,chancesCreated:50}},
+  {id:'tor0708',name:'Fernando Torres',team:'Liverpool',season:'2007–08',pos:'FWD',color:'#c8102e',stats:{goals:24,assists:8,chancesCreated:52}},
+  {id:'agu1415',name:'Sergio Agüero',team:'Manchester City',season:'2014–15',pos:'FWD',color:'#6cabdd',stats:{goals:26,assists:7,chancesCreated:55}},
+  {id:'agu1112',name:'Sergio Agüero',team:'Manchester City',season:'2011–12',pos:'FWD',color:'#6cabdd',stats:{goals:23,assists:5,chancesCreated:50}},
+  {id:'rvp1112',name:'Robin van Persie',team:'Arsenal',season:'2011–12',pos:'FWD',color:'#ef0107',stats:{goals:30,assists:13,chancesCreated:62}},
+  {id:'sua1314',name:'Luis Suárez',team:'Liverpool',season:'2013–14',pos:'FWD',color:'#c8102e',stats:{goals:31,assists:12,chancesCreated:72}},
+  {id:'sal1718',name:'Mohamed Salah',team:'Liverpool',season:'2017–18',pos:'FWD',color:'#c8102e',stats:{goals:32,assists:11,chancesCreated:85}},
+  {id:'kan1617f',name:'Harry Kane',team:'Tottenham Hotspur',season:'2016–17',pos:'FWD',color:'#132257',stats:{goals:29,assists:14,chancesCreated:55}},
+  {id:'kan1718',name:'Harry Kane',team:'Tottenham Hotspur',season:'2017–18',pos:'FWD',color:'#132257',stats:{goals:30,assists:9,chancesCreated:56}},
+  {id:'var1516',name:'Jamie Vardy',team:'Leicester City',season:'2015–16',pos:'FWD',color:'#003090',stats:{goals:24,assists:6,chancesCreated:35}},
+  {id:'son2021',name:'Son Heung-min',team:'Tottenham Hotspur',season:'2020–21',pos:'FWD',color:'#132257',stats:{goals:22,assists:10,chancesCreated:60}},
+  {id:'haa2223',name:'Erling Haaland',team:'Manchester City',season:'2022–23',pos:'FWD',color:'#6cabdd',stats:{goals:36,assists:8,chancesCreated:45}},
+  {id:'haa2324',name:'Erling Haaland',team:'Manchester City',season:'2023–24',pos:'FWD',color:'#6cabdd',stats:{goals:27,assists:5,chancesCreated:42}},
+  {id:'yor9900',name:'Dwight Yorke',team:'Manchester United',season:'1999–00',pos:'FWD',color:'#da291c',stats:{goals:20,assists:9,chancesCreated:52}},
+  {id:'dub9798',name:'Dion Dublin',team:'Coventry City',season:'1997–98',pos:'FWD',color:'#8b0000',stats:{goals:18,assists:5,chancesCreated:35}},
+
+  // ── EXTRA GOALKEEPERS ──
+  {id:'mar9293',name:'Chris Woods',team:'Sheffield Wednesday',season:'1992–93',pos:'GK',color:'#0066cc',stats:{cleanSheets:12,savePct:72}},
+  {id:'boa9697',name:'Neville Southall',team:'Everton',season:'1996–97',pos:'GK',color:'#003399',stats:{cleanSheets:10,savePct:74}},
+  {id:'how0708',name:'Tim Howard',team:'Everton',season:'2007–08',pos:'GK',color:'#003399',stats:{cleanSheets:12,savePct:75}},
+  {id:'how1314',name:'Tim Howard',team:'Everton',season:'2013–14',pos:'GK',color:'#003399',stats:{cleanSheets:14,savePct:78}},
+  {id:'rob0405',name:'Paul Robinson',team:'Tottenham Hotspur',season:'2004–05',pos:'GK',color:'#132257',stats:{cleanSheets:15,savePct:74}},
+  {id:'giv0304',name:'Shay Given',team:'Newcastle United',season:'2003–04',pos:'GK',color:'#241f20',stats:{cleanSheets:10,savePct:76}},
+  {id:'rei0607',name:'Pepe Reina',team:'Liverpool',season:'2006–07',pos:'GK',color:'#c8102e',stats:{cleanSheets:19,savePct:79}},
+  {id:'rei0809',name:'Pepe Reina',team:'Liverpool',season:'2008–09',pos:'GK',color:'#c8102e',stats:{cleanSheets:20,savePct:79}},
+  {id:'hen1415',name:'Fraser Forster',team:'Southampton',season:'2014–15',pos:'GK',color:'#d71920',stats:{cleanSheets:14,savePct:79}},
+  {id:'fla2021',name:'Emiliano Martínez',team:'Aston Villa',season:'2020–21',pos:'GK',color:'#95bfe5',stats:{cleanSheets:15,savePct:81}},
+  {id:'mos2122',name:'José Sá',team:'Wolverhampton',season:'2021–22',pos:'GK',color:'#fdb913',stats:{cleanSheets:8,savePct:78}},
+  {id:'ram2324',name:'David Raya',team:'Arsenal',season:'2023–24',pos:'GK',color:'#ef0107',stats:{cleanSheets:16,savePct:82}},
+
+  // ── EXTRA DEFENDERS ──
+  {id:'ste9293',name:'Steve Bruce',team:'Manchester United',season:'1992–93',pos:'DEF',color:'#da291c',stats:{cleanSheets:14,tackles:78,interceptions:72}},
+  {id:'pal9293',name:'Gary Pallister',team:'Manchester United',season:'1992–93',pos:'DEF',color:'#da291c',stats:{cleanSheets:14,tackles:70,interceptions:80}},
+  {id:'leh9495',name:'David Unsworth',team:'Everton',season:'1994–95',pos:'DEF',color:'#003399',stats:{cleanSheets:10,tackles:82,interceptions:68}},
+  {id:'bow9596',name:'Colin Hendry',team:'Blackburn Rovers',season:'1994–95',pos:'DEF',color:'#009ee0',stats:{cleanSheets:15,tackles:88,interceptions:78}},
+  {id:'wri9798',name:'Ian Wright',team:'Arsenal',season:'1997–98',pos:'FWD',color:'#ef0107',stats:{goals:10,assists:4,chancesCreated:28}},
+  {id:'sig9900',name:'Ugo Ehiogu',team:'Aston Villa',season:'1999–00',pos:'DEF',color:'#95bfe5',stats:{cleanSheets:12,tackles:80,interceptions:75}},
+  {id:'haa0102',name:'Sami Hyypiä',team:'Liverpool',season:'2001–02',pos:'DEF',color:'#c8102e',stats:{cleanSheets:15,tackles:80,interceptions:85}},
+  {id:'pet0203',name:'Jonathan Woodgate',team:'Leeds United',season:'2001–02',pos:'DEF',color:'#ffcd00',stats:{cleanSheets:12,tackles:82,interceptions:78}},
+  {id:'gal0506',name:'William Gallas',team:'Chelsea',season:'2005–06',pos:'DEF',color:'#034694',stats:{cleanSheets:21,tackles:70,interceptions:80}},
+  {id:'vid0607',name:'Nemanja Vidić',team:'Manchester United',season:'2006–07',pos:'DEF',color:'#da291c',stats:{cleanSheets:16,tackles:90,interceptions:88}},
+  {id:'col0809',name:'Ashley Cole',team:'Chelsea',season:'2008–09',pos:'DEF',color:'#034694',stats:{cleanSheets:17,tackles:90,interceptions:76}},
+  {id:'alv0809',name:'Álvaro Arbeloa',team:'Liverpool',season:'2008–09',pos:'DEF',color:'#c8102e',stats:{cleanSheets:20,tackles:78,interceptions:68}},
+  {id:'ric1011',name:'Micah Richards',team:'Manchester City',season:'2010–11',pos:'DEF',color:'#6cabdd',stats:{cleanSheets:15,tackles:85,interceptions:70}},
+  {id:'bac1112',name:'Bacary Sagna',team:'Arsenal',season:'2011–12',pos:'DEF',color:'#ef0107',stats:{cleanSheets:12,tackles:88,interceptions:72}},
+  {id:'san1415d',name:'Héctor Bellerín',team:'Arsenal',season:'2015–16',pos:'DEF',color:'#ef0107',stats:{cleanSheets:12,tackles:80,interceptions:65}},
+  {id:'clo1617',name:'Nathaniel Clyne',team:'Liverpool',season:'2015–16',pos:'DEF',color:'#c8102e',stats:{cleanSheets:12,tackles:82,interceptions:68}},
+  {id:'chi1718',name:'César Azpilicueta',team:'Chelsea',season:'2016–17',pos:'DEF',color:'#034694',stats:{cleanSheets:16,tackles:85,interceptions:75}},
+  {id:'lov1819',name:'Dejan Lovren',team:'Liverpool',season:'2018–19',pos:'DEF',color:'#c8102e',stats:{cleanSheets:21,tackles:58,interceptions:72}},
+  {id:'ake2021',name:'Nathan Aké',team:'Manchester City',season:'2020–21',pos:'DEF',color:'#6cabdd',stats:{cleanSheets:14,tackles:62,interceptions:74}},
+  {id:'can2122',name:'Reece James',team:'Chelsea',season:'2021–22',pos:'DEF',color:'#034694',stats:{cleanSheets:12,tackles:85,interceptions:72}},
+  {id:'sal2223d',name:'Ben White',team:'Arsenal',season:'2022–23',pos:'DEF',color:'#ef0107',stats:{cleanSheets:14,tackles:75,interceptions:70}},
+  {id:'tri2324',name:'Trent Alexander-Arnold',team:'Liverpool',season:'2021–22',pos:'DEF',color:'#c8102e',stats:{cleanSheets:10,tackles:52,interceptions:55}},
+
+  // ── EXTRA MIDFIELDERS ──
+  {id:'inc9293',name:'Paul Ince',team:'Manchester United',season:'1992–93',pos:'MID',color:'#da291c',stats:{passAccuracy:80,tackles:95,interceptions:78,chancesCreated:42,goals:7,assists:9}},
+  {id:'bea9394',name:'Tim Sherwood',team:'Blackburn Rovers',season:'1993–94',pos:'MID',color:'#009ee0',stats:{passAccuracy:80,tackles:82,interceptions:65,chancesCreated:38,goals:8,assists:7}},
+  {id:'lee9697',name:'David Batty',team:'Newcastle United',season:'1996–97',pos:'MID',color:'#241f20',stats:{passAccuracy:82,tackles:95,interceptions:80,chancesCreated:30,goals:1,assists:4}},
+  {id:'gas9596',name:'David Ginola',team:'Newcastle United',season:'1995–96',pos:'FWD',color:'#241f20',stats:{goals:5,assists:12,chancesCreated:88}},
+  {id:'ben9899',name:'Dennis Bergkamp',team:'Arsenal',season:'1997–98',pos:'FWD',color:'#ef0107',stats:{goals:16,assists:11,chancesCreated:92}},
+  {id:'ber0102',name:'Dennis Bergkamp',team:'Arsenal',season:'2001–02',pos:'FWD',color:'#ef0107',stats:{goals:9,assists:10,chancesCreated:88}},
+  {id:'mus0203',name:'Nicky Butt',team:'Manchester United',season:'2002–03',pos:'MID',color:'#da291c',stats:{passAccuracy:81,tackles:85,interceptions:68,chancesCreated:32,goals:3,assists:5}},
+  {id:'duf0304',name:'Damien Duff',team:'Chelsea',season:'2003–04',pos:'MID',color:'#034694',stats:{passAccuracy:80,tackles:42,interceptions:35,chancesCreated:80,goals:4,assists:8}},
+  {id:'mak0405',name:'Claude Makélélé',team:'Chelsea',season:'2004–05',pos:'MID',color:'#034694',stats:{passAccuracy:88,tackles:105,interceptions:92,chancesCreated:28,goals:1,assists:3}},
+  {id:'ess0607',name:'Michael Essien',team:'Chelsea',season:'2006–07',pos:'MID',color:'#034694',stats:{passAccuracy:84,tackles:98,interceptions:82,chancesCreated:48,goals:2,assists:5}},
+  {id:'har0708',name:'Jermaine Jenas',team:'Tottenham Hotspur',season:'2007–08',pos:'MID',color:'#132257',stats:{passAccuracy:83,tackles:72,interceptions:58,chancesCreated:52,goals:4,assists:5}},
+  {id:'bay0809',name:'Gareth Barry',team:'Aston Villa',season:'2007–08',pos:'MID',color:'#95bfe5',stats:{passAccuracy:85,tackles:78,interceptions:65,chancesCreated:48,goals:5,assists:6}},
+  {id:'fle0910',name:'James Milner',team:'Aston Villa',season:'2009–10',pos:'MID',color:'#95bfe5',stats:{passAccuracy:85,tackles:80,interceptions:68,chancesCreated:55,goals:8,assists:9}},
+  {id:'nai1011',name:'Samir Nasri',team:'Arsenal',season:'2010–11',pos:'MID',color:'#ef0107',stats:{passAccuracy:86,tackles:52,interceptions:42,chancesCreated:88,goals:10,assists:10}},
+  {id:'nas1112',name:'David Silva',team:'Manchester City',season:'2012–13',pos:'MID',color:'#6cabdd',stats:{passAccuracy:91,tackles:48,interceptions:42,chancesCreated:96,goals:8,assists:13}},
+  {id:'sch1213',name:'Mikel Arteta',team:'Arsenal',season:'2012–13',pos:'MID',color:'#ef0107',stats:{passAccuracy:90,tackles:68,interceptions:58,chancesCreated:55,goals:4,assists:8}},
+  {id:'pie1314',name:'Juan Mata',team:'Chelsea',season:'2012–13',pos:'MID',color:'#034694',stats:{passAccuracy:87,tackles:38,interceptions:30,chancesCreated:102,goals:12,assists:19}},
+  {id:'ram1415',name:'Aaron Ramsey',team:'Arsenal',season:'2013–14',pos:'MID',color:'#ef0107',stats:{passAccuracy:85,tackles:70,interceptions:55,chancesCreated:78,goals:10,assists:8}},
+  {id:'wil1516',name:'Willian',team:'Chelsea',season:'2015–16',pos:'MID',color:'#034694',stats:{passAccuracy:83,tackles:48,interceptions:38,chancesCreated:82,goals:5,assists:8}},
+  {id:'llo1617',name:'James Milner',team:'Liverpool',season:'2016–17',pos:'MID',color:'#c8102e',stats:{passAccuracy:88,tackles:80,interceptions:65,chancesCreated:58,goals:7,assists:7}},
+  {id:'oxl1819',name:'Alex Oxlade-Chamberlain',team:'Liverpool',season:'2018–19',pos:'MID',color:'#c8102e',stats:{passAccuracy:85,tackles:62,interceptions:48,chancesCreated:72,goals:4,assists:2}},
+  {id:'mou1920',name:'James Maddison',team:'Leicester City',season:'2019–20',pos:'MID',color:'#003090',stats:{passAccuracy:83,tackles:45,interceptions:35,chancesCreated:95,goals:9,assists:6}},
+  {id:'sak2021',name:'Bukayo Saka',team:'Arsenal',season:'2020–21',pos:'MID',color:'#ef0107',stats:{passAccuracy:82,tackles:42,interceptions:32,chancesCreated:80,goals:7,assists:5}},
+  {id:'sak2223',name:'Bukayo Saka',team:'Arsenal',season:'2022–23',pos:'MID',color:'#ef0107',stats:{passAccuracy:84,tackles:45,interceptions:35,chancesCreated:95,goals:14,assists:11}},
+  {id:'tro2122',name:'Leandro Trossard',team:'Brighton',season:'2021–22',pos:'MID',color:'#0057b8',stats:{passAccuracy:83,tackles:40,interceptions:30,chancesCreated:85,goals:7,assists:5}},
+  {id:'sal2223m',name:'Mohamed Salah',team:'Liverpool',season:'2021–22',pos:'MID',color:'#c8102e',stats:{passAccuracy:81,tackles:32,interceptions:24,chancesCreated:92,goals:23,assists:13}},
+  {id:'ode2223',name:'Martin Ødegaard',team:'Arsenal',season:'2022–23',pos:'MID',color:'#ef0107',stats:{passAccuracy:88,tackles:48,interceptions:38,chancesCreated:105,goals:15,assists:7}},
+  {id:'ric2324',name:'Cole Palmer',team:'Chelsea',season:'2023–24',pos:'MID',color:'#034694',stats:{passAccuracy:85,tackles:38,interceptions:28,chancesCreated:102,goals:22,assists:11}},
+
+  // ── EXTRA FORWARDS ──
+  {id:'qui9293',name:'Mick Quinn',team:'Coventry City',season:'1992–93',pos:'FWD',color:'#8b0000',stats:{goals:17,assists:4,chancesCreated:30}},
+  {id:'she9394',name:'Alan Shearer',team:'Blackburn Rovers',season:'1993–94',pos:'FWD',color:'#009ee0',stats:{goals:31,assists:6,chancesCreated:38}},
+  {id:'col9495',name:'Andrew Cole',team:'Manchester United',season:'1994–95',pos:'FWD',color:'#da291c',stats:{goals:12,assists:3,chancesCreated:32}},
+  {id:'can9596',name:'Stan Collymore',team:'Liverpool',season:'1994–95',pos:'FWD',color:'#c8102e',stats:{goals:17,assists:8,chancesCreated:42}},
+  {id:'fer9697',name:'Les Ferdinand',team:'Newcastle United',season:'1996–97',pos:'FWD',color:'#241f20',stats:{goals:16,assists:5,chancesCreated:40}},
+  {id:'bec9697',name:'David Beckham',team:'Manchester United',season:'1996–97',pos:'MID',color:'#da291c',stats:{passAccuracy:80,tackles:48,interceptions:30,chancesCreated:92,goals:8,assists:14}},
+  {id:'owe9798',name:'Michael Owen',team:'Liverpool',season:'1997–98',pos:'FWD',color:'#c8102e',stats:{goals:18,assists:6,chancesCreated:38}},
+  {id:'smi9899',name:'Michael Bridges',team:'Leeds United',season:'1999–00',pos:'FWD',color:'#ffcd00',stats:{goals:19,assists:4,chancesCreated:38}},
+  {id:'has9900',name:'Kevin Phillips',team:'Sunderland',season:'1999–00',pos:'FWD',color:'#eb172b',stats:{goals:30,assists:8,chancesCreated:42}},
+  {id:'kea0001',name:'Robbie Keane',team:'Coventry City',season:'1999–00',pos:'FWD',color:'#8b0000',stats:{goals:12,assists:6,chancesCreated:38}},
+  {id:'col0001',name:'Andrew Cole',team:'Manchester United',season:'1999–00',pos:'FWD',color:'#da291c',stats:{goals:19,assists:6,chancesCreated:40}},
+  {id:'cha0102',name:'Marcus Stewart',team:'Ipswich Town',season:'2000–01',pos:'FWD',color:'#0044aa',stats:{goals:19,assists:5,chancesCreated:35}},
+  {id:'dro0607',name:'Didier Drogba',team:'Chelsea',season:'2006–07',pos:'FWD',color:'#034694',stats:{goals:20,assists:8,chancesCreated:48}},
+  {id:'ber0708',name:'Dimitar Berbatov',team:'Tottenham Hotspur',season:'2007–08',pos:'FWD',color:'#132257',stats:{goals:23,assists:10,chancesCreated:55}},
+  {id:'vil0809',name:'Nicolas Anelka',team:'Chelsea',season:'2008–09',pos:'FWD',color:'#034694',stats:{goals:19,assists:7,chancesCreated:44}},
+  {id:'tex0910',name:'Carlos Tevez',team:'Manchester City',season:'2009–10',pos:'FWD',color:'#6cabdd',stats:{goals:23,assists:9,chancesCreated:52}},
+  {id:'pet1011',name:'Carlos Tevez',team:'Manchester City',season:'2010–11',pos:'FWD',color:'#6cabdd',stats:{goals:20,assists:8,chancesCreated:50}},
+  {id:'nol1011',name:'Darren Bent',team:'Sunderland',season:'2009–10',pos:'FWD',color:'#eb172b',stats:{goals:24,assists:5,chancesCreated:38}},
+  {id:'bem1112',name:'Robin van Persie',team:'Manchester United',season:'2012–13',pos:'FWD',color:'#da291c',stats:{goals:26,assists:10,chancesCreated:58}},
+  {id:'sub1213',name:'Christian Benteke',team:'Aston Villa',season:'2012–13',pos:'FWD',color:'#95bfe5',stats:{goals:19,assists:5,chancesCreated:42}},
+  {id:'def1415',name:'Diego Costa',team:'Chelsea',season:'2014–15',pos:'FWD',color:'#034694',stats:{goals:20,assists:5,chancesCreated:45}},
+  {id:'osh1516',name:'Odion Ighalo',team:'Watford',season:'2015–16',pos:'FWD',color:'#fbee23',stats:{goals:15,assists:4,chancesCreated:32}},
+  {id:'luk1617',name:'Romelu Lukaku',team:'Everton',season:'2016–17',pos:'FWD',color:'#003399',stats:{goals:25,assists:7,chancesCreated:45}},
+  {id:'sal1819',name:'Mohamed Salah',team:'Liverpool',season:'2018–19',pos:'FWD',color:'#c8102e',stats:{goals:22,assists:12,chancesCreated:80}},
+  {id:'man1920',name:'Sadio Mané',team:'Liverpool',season:'2018–19',pos:'FWD',color:'#c8102e',stats:{goals:22,assists:8,chancesCreated:60}},
+  {id:'abr2021',name:'Ollie Watkins',team:'Aston Villa',season:'2020–21',pos:'FWD',color:'#95bfe5',stats:{goals:14,assists:6,chancesCreated:42}},
+  {id:'ant2122',name:'Michail Antonio',team:'West Ham',season:'2020–21',pos:'FWD',color:'#7a263a',stats:{goals:10,assists:5,chancesCreated:38}},
+  {id:'nkl2223',name:'Ivan Toney',team:'Brentford',season:'2022–23',pos:'FWD',color:'#e30613',stats:{goals:20,assists:5,chancesCreated:42}},
+  {id:'ras2223',name:'Marcus Rashford',team:'Manchester United',season:'2022–23',pos:'FWD',color:'#da291c',stats:{goals:17,assists:7,chancesCreated:55}},
+];
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let state = {
+  screen: 'intro',
+  team: { GK:[], DEF:[], MID:[], FWD:[] },
+  spins: 0,
+  skips: 0,
+  currentPlayer: null,
+  isSpinning: false,
+  spinPool: [],
+  usedIds: new Set(),
+  usedNames: new Set(),
+  simResult: null
+};
+
+function resetState() {
+  state = {
+    screen: 'game',
+    team: { GK:[], DEF:[], MID:[], FWD:[] },
+    spins: 0,
+    skips: 0,
+    currentPlayer: null,
+    isSpinning: false,
+    spinPool: [...PLAYERS],
+    usedIds: new Set(),
+    usedNames: new Set(),
+    simResult: null
+  };
+}
+
+const SLOTS = { GK:1, DEF:4, MID:4, FWD:2 };
+
+function posLabel(pos) {
+  return pos;
+}
+
+function isSlotFull(pos) {
+  return state.team[pos].length >= SLOTS[pos];
+}
+
+function isTeamComplete() {
+  return Object.keys(SLOTS).every(p => state.team[p].length === SLOTS[p]);
+}
+
+function teamSize() {
+  return Object.values(state.team).reduce((s,a) => s+a.length, 0);
+}
+
+// ============================================================
+// SIMULATION ENGINE
+// ============================================================
+function poissonRandom(lambda) {
+  if (lambda <= 0) return 0;
+  const L = Math.exp(-Math.min(lambda, 20));
+  let k=0, p=1;
+  do { k++; p *= Math.random(); } while (p > L);
+  return k - 1;
+}
+
+function calcRatings(team) {
+  const gk = team.GK[0];
+  const defs = team.DEF;
+  const mids = team.MID;
+  const fwds = team.FWD;
+
+  let gkRating = 0;
+  if (gk) {
+    gkRating = Math.min(1, gk.stats.cleanSheets/22)*0.5 + Math.min(1, gk.stats.savePct/85)*0.5;
+  }
+
+  let defRating = 0;
+  if (defs.length) {
+    defRating = defs.reduce((s,d) =>
+      s + Math.min(1,d.stats.cleanSheets/22)*0.4
+        + Math.min(1,d.stats.tackles/120)*0.3
+        + Math.min(1,d.stats.interceptions/100)*0.3
+    , 0) / defs.length;
+  }
+
+  let midDefRating = 0, midOffRating = 0, midPassAvg = 0;
+  if (mids.length) {
+    midDefRating = mids.reduce((s,m) =>
+      s + Math.min(1,m.stats.tackles/110)*0.35
+        + Math.min(1,m.stats.interceptions/90)*0.35
+        + Math.min(1,m.stats.passAccuracy/95)*0.3
+    , 0) / mids.length;
+    midOffRating = mids.reduce((s,m) =>
+      s + Math.min(1,m.stats.chancesCreated/120)*0.65
+        + Math.min(1,m.stats.passAccuracy/95)*0.35
+    , 0) / mids.length;
+    midPassAvg = mids.reduce((s,m) => s+m.stats.passAccuracy, 0) / mids.length;
+  }
+
+  let fwdRating = 0;
+  if (fwds.length) {
+    fwdRating = fwds.reduce((s,f) =>
+      s + Math.min(1,f.stats.goals/36)*0.65
+        + Math.min(1,f.stats.chancesCreated/82)*0.35
+    , 0) / fwds.length;
+  }
+
+  const teamAttack  = fwdRating * 0.60 + midOffRating * 0.40;
+  const teamDefense = gkRating  * 0.35 + defRating    * 0.45 + midDefRating * 0.20;
+  const teamControl = midPassAvg / 95;
+
+  return { teamAttack, teamDefense, teamControl };
+}
+
+function simulateSeason(team, runs=3) {
+  const { teamAttack, teamDefense, teamControl } = calcRatings(team);
+  const results = [];
+
+  for (let r=0; r<runs; r++) {
+    let pts=0, w=0, d=0, l=0, gf=0, ga=0;
+    for (let g=0; g<38; g++) {
+      const oppAtk = Math.random()*0.6 + 0.2;
+      const oppDef = Math.random()*0.6 + 0.2;
+      const lFor = Math.max(0.2, teamAttack*2.5*(1-oppDef*0.55) + teamControl*0.4);
+      const lAga = Math.max(0.08, oppAtk*2.0*(1-teamDefense*0.82));
+      const scored = poissonRandom(lFor);
+      const conceded = poissonRandom(lAga);
+      gf += scored; ga += conceded;
+      if (scored > conceded) { pts+=3; w++; }
+      else if (scored === conceded) { pts+=1; d++; }
+      else l++;
+    }
+    results.push({pts,w,d,l,gf,ga});
+  }
+
+  const avg = key => Math.round(results.reduce((s,r)=>s+r[key],0)/runs);
+  return {
+    points: avg('pts'), wins: avg('w'), draws: avg('d'), losses: avg('l'),
+    goalsFor: avg('gf'), goalsAgainst: avg('ga'),
+    teamAttack, teamDefense, teamControl
+  };
+}
+
+function partialProjection(team) {
+  const size = teamSize();
+  if (size === 0) return null;
+  const { teamAttack, teamDefense, teamControl } = calcRatings(team);
+  // rough estimate based on what's filled
+  const completeness = size / 11;
+  const estAtk = teamAttack / (size > 0 ? Math.max(team.FWD.length/2, team.MID.length/4, .3) : 1);
+  const estDef = teamDefense;
+  const lFor = Math.max(0.2, teamAttack*2.5*(1-0.5*0.55) + teamControl*0.4);
+  const lAga = Math.max(0.08, 0.5*2.0*(1-teamDefense*0.82));
+  // expected pts per game
+  let eppg = 0;
+  for (let i=0;i<500;i++){
+    const s=poissonRandom(lFor), c=poissonRandom(lAga);
+    if(s>c) eppg+=3; else if(s===c) eppg+=1;
+  }
+  eppg /= 500;
+  return Math.round(eppg * 38);
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+}
+
+function el(id) { return document.getElementById(id); }
+
+function getStatLabel(pos, key) {
+  const labels = {
+    cleanSheets:'Clean Sheets', savePct:'Save %', tackles:'Tackles',
+    interceptions:'Interceptions', passAccuracy:'Pass Acc %',
+    chancesCreated:'Chances Created', goals:'Goals', assists:'Assists'
+  };
+  return labels[key] || key;
+}
+
+function getStatVal(pos, key, val) {
+  if (key === 'savePct' || key === 'passAccuracy') return val + '%';
+  return val;
+}
+
+function playerRatingStr(p) {
+  if (p.pos==='GK') return `${p.stats.cleanSheets} CS · ${p.stats.savePct}% Saves`;
+  if (p.pos==='DEF') return `${p.stats.cleanSheets} CS · ${p.stats.tackles} Tkl · ${p.stats.interceptions} Int`;
+  if (p.pos==='MID') return `${p.stats.goals}G ${p.stats.assists}A · ${p.stats.chancesCreated} CC`;
+  if (p.pos==='FWD') return `${p.stats.goals}G ${p.stats.assists}A · ${p.stats.chancesCreated} CC`;
+}
+
+const MAX_SKIPS = 5;
+const MAX_PER_TEAM = 4;
+
+function skipsLeft() { return MAX_SKIPS - state.skips; }
+
+function teamCountFor(teamName) {
+  return Object.values(state.team).flat().filter(p => p.team === teamName).length;
+}
+
+// ============================================================
+// SLOT MACHINE ANIMATION
+// ============================================================
+function buildSlotTrack(finalPlayer) {
+  const track = el('slot-track');
+  track.innerHTML = '';
+  // Build array: 12 random fillers + final
+  const fillers = [...PLAYERS].sort(()=>Math.random()-.5).slice(0, 12);
+  const items = [...fillers, finalPlayer];
+  items.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'slot-item';
+    div.innerHTML = `
+      <div class="si-pos"><span class="pos-pill pos-${p.pos}">${p.pos}</span></div>
+      <div class="si-name">${p.name}</div>
+      <div class="si-team">${p.team}</div>
+      <div class="si-season">${p.season}</div>`;
+    track.appendChild(div);
+  });
+  return items.length;
+}
+
+const ITEM_H = 160;
+
+function neededPositions() {
+  return Object.keys(SLOTS).filter(pos => state.team[pos].length < SLOTS[pos]);
+}
+
+function doSpin() {
+  if (state.isSpinning) return;
+
+  // Only spin players in positions still needed
+  const needed = neededPositions();
+  let available = state.spinPool.filter(p => needed.includes(p.pos) && !state.usedNames.has(p.name));
+  if (available.length === 0) {
+    // Refill from full list filtered to needed positions
+    available = PLAYERS.filter(p => needed.includes(p.pos) && !state.usedIds.has(p.id) && !state.usedNames.has(p.name));
+    if (available.length === 0) available = PLAYERS.filter(p => needed.includes(p.pos));
+    state.spinPool = [...available];
+  }
+
+  state.isSpinning = true;
+  state.spins++;
+  el('spin-count').textContent = state.spins;
+  el('skips-left').textContent = skipsLeft();
+  el('spins-badge').style.display = 'flex';
+  el('spin-btn').style.display = 'none';
+  el('spin-again-btn').style.display = 'none';
+
+  el('reveal-card').classList.remove('visible');
+
+  // Pick player from needed-position pool only
+  const idx = Math.floor(Math.random() * available.length);
+  const player = available[idx];
+  state.spinPool = state.spinPool.filter(p => p.id !== player.id);
+  state.currentPlayer = player;
+
+  const count = buildSlotTrack(player);
+  const track = el('slot-track');
+  const targetY = -(count - 1) * ITEM_H;
+
+  // Phase 1: snap to top instantly
+  track.style.transition = 'none';
+  track.style.transform = 'translateY(0)';
+
+  // Phase 2: fast spin to mid-point (no easing — linear feel)
+  const midY = targetY + ITEM_H * 3; // stop 3 items before the end
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      track.style.transition = 'transform 0.55s linear';
+      track.style.transform = `translateY(${midY}px)`;
+    });
+  });
+
+  // Phase 3: after fast phase, decelerate into the final card
+  setTimeout(() => {
+    track.style.transition = 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)';
+    track.style.transform = `translateY(${targetY}px)`;
+  }, 570);
+
+  // Reveal after full animation completes
+  setTimeout(() => {
+    state.isSpinning = false;
+    revealPlayer(player);
+  }, 1200);
+}
+
+function revealPlayer(player) {
+  const rc = el('reveal-card');
+  rc.classList.add('visible');
+  rc.classList.add('fade-in');
+
+  el('rc-badge').style.background = player.color + '33';
+  el('rc-badge').style.border = `2px solid ${player.color}`;
+  el('rc-badge').textContent = player.pos === 'GK' ? '🧤' : player.pos === 'DEF' ? '🛡️' : player.pos === 'MID' ? '⚙️' : '⚽';
+  el('rc-name').textContent = player.name;
+  el('rc-meta').innerHTML = `<span class="pos-pill pos-${player.pos}">${player.pos}</span>${player.team} · ${player.season}`;
+
+  // Stats
+  const sg = el('stats-grid');
+  sg.innerHTML = '';
+  Object.entries(player.stats).forEach(([k,v]) => {
+    sg.innerHTML += `<div class="stat-box"><div class="sb-val">${getStatVal(player.pos,k,v)}</div><div class="sb-label">${getStatLabel(player.pos,k)}</div></div>`;
+  });
+
+  // Slot full / team limit checks
+  const fullMsg = el('slot-full-msg');
+  const slotFull = isSlotFull(player.pos);
+  const teamFull = teamCountFor(player.team) >= MAX_PER_TEAM;
+  const noSkips  = skipsLeft() <= 0;
+
+  if (slotFull) {
+    fullMsg.textContent = `${player.pos} slots are full — remove a player to swap, or spin again.`;
+    fullMsg.classList.add('show');
+  } else if (teamFull) {
+    fullMsg.textContent = `You already have ${MAX_PER_TEAM} players from ${player.team}. Max reached.`;
+    fullMsg.classList.add('show');
+  } else {
+    fullMsg.classList.remove('show');
+  }
+
+  const canAdd = !slotFull && !teamFull;
+
+  // Actions
+  const actions = el('rc-actions');
+  const skipLabel = noSkips
+    ? '✕ No Skips Left'
+    : `✕ Skip (${skipsLeft()} left)`;
+
+  if (canAdd) {
+    actions.innerHTML = `
+      <button class="btn-primary" onclick="acceptPlayer()">✓ Add to Team</button>
+      <button class="btn-danger ${noSkips ? 'skip-disabled' : ''}" onclick="${noSkips ? 'showNoSkipsWarning()' : 'rejectPlayer()'}">${skipLabel}</button>`;
+  } else {
+    // Can't add — forced to spin (counts as a skip if skips remain, else free)
+    actions.innerHTML = `<button class="btn-secondary" onclick="rejectPlayer()">Spin Again</button>`;
+  }
+
+  // Only show "Spin Again" when the player can't be added — otherwise the user must Accept or Skip
+  el('spin-again-btn').style.display = canAdd ? 'none' : 'block';
+}
+
+function acceptPlayer() {
+  const p = state.currentPlayer;
+  if (!p || isSlotFull(p.pos)) return;
+  state.team[p.pos].push(p);
+  state.usedIds.add(p.id);
+  state.usedNames.add(p.name);
+  // Remove all other seasons of the same player from the pool
+  state.spinPool = state.spinPool.filter(q => q.name !== p.name);
+  el('reveal-card').classList.remove('visible');
+  el('spin-btn').style.display = 'block';
+  el('spin-again-btn').style.display = 'none';
+  updatePitch();
+  updateSummary();
+}
+
+function rejectPlayer() {
+  const p = state.currentPlayer;
+  const canAdd = p && !isSlotFull(p.pos) && teamCountFor(p.team) < MAX_PER_TEAM;
+  // Only count as a skip if they could have added this player but chose not to
+  if (canAdd) {
+    if (skipsLeft() <= 0) { showNoSkipsWarning(); return; }
+    state.skips++;
+    el('skips-left').textContent = skipsLeft();
+  }
+  el('reveal-card').classList.remove('visible');
+  el('spin-btn').style.display = 'block';
+  el('spin-again-btn').style.display = 'none';
+}
+
+function showNoSkipsWarning() {
+  const msg = el('slot-full-msg');
+  msg.textContent = `No skips left! You must add this player or remove someone to make room.`;
+  msg.classList.add('show');
+}
+
+function removePlayer(pos, idx) {
+  state.team[pos].splice(idx, 1);
+  updatePitch();
+  updateSummary();
+}
+
+// ============================================================
+// PITCH RENDER
+// ============================================================
+function updatePitch() {
+  const rows = { GK:'row-gk', DEF:'row-def', MID:'row-mid', FWD:'row-fwd' };
+  Object.entries(rows).forEach(([pos, rowId]) => {
+    const row = el(rowId);
+    row.innerHTML = '';
+    const max = SLOTS[pos];
+    for (let i=0; i<max; i++) {
+      const p = state.team[pos][i];
+      const slot = document.createElement('div');
+      slot.className = 'pos-slot' + (p ? ' filled' : '');
+      if (p) {
+        const shortName = p.name.split(' ').pop();
+        slot.style.borderColor = p.color;
+        slot.innerHTML = `
+          <div class="ps-label">${pos}</div>
+          <div class="ps-name">${shortName}</div>
+          <div class="ps-remove" onclick="removePlayer('${pos}',${i})">×</div>`;
+      } else {
+        slot.innerHTML = `<div class="ps-label">${pos}</div>`;
+      }
+      row.appendChild(slot);
+    }
+  });
+
+  // Simulate button state
+  const btn = el('simulate-btn');
+  const hint = el('sim-hint');
+  if (isTeamComplete()) {
+    btn.classList.add('ready');
+    hint.textContent = `${state.spins} spin${state.spins===1?'':'s'} used — ready to simulate!`;
+  } else {
+    btn.classList.remove('ready');
+    const need = Object.keys(SLOTS).map(p => {
+      const rem = SLOTS[p] - state.team[p].length;
+      if (rem > 0) return `${rem} ${p}`;
+      return null;
+    }).filter(Boolean);
+    hint.textContent = `Still need: ${need.join(', ')}`;
+  }
+}
+
+// ============================================================
+// TEAM SUMMARY BARS
+// ============================================================
+function updateSummary() {
+  const { teamAttack, teamDefense, teamControl } = calcRatings(state.team);
+  const pct = v => Math.round(v * 100);
+
+  el('bar-attack').style.width = pct(teamAttack) + '%';
+  el('val-attack').textContent = pct(teamAttack);
+  el('bar-defense').style.width = pct(teamDefense) + '%';
+  el('val-defense').textContent = pct(teamDefense);
+  el('bar-control').style.width = pct(teamControl) + '%';
+  el('val-control').textContent = pct(teamControl);
+
+  const proj = el('ts-projection');
+  const size = teamSize();
+  if (size >= 3) {
+    proj.style.display = 'flex';
+    const est = partialProjection(state.team);
+    el('proj-val').textContent = est ? `~${est} pts` : '—';
+  } else {
+    proj.style.display = 'none';
+  }
+}
+
+// ============================================================
+// RESULTS
+// ============================================================
+const HISTORY = [
+  { label:'Man City 2017–18', pts:100 },
+  { label:'Liverpool 2019–20', pts:99 },
+  { label:'Man City 2018–19', pts:98 },
+  { label:'Chelsea 2004–05', pts:95 },
+  { label:'Man United 1999–00', pts:91 },
+  { label:'Arsenal 2003–04', pts:90 },
+  { label:'Man City 2021–22', pts:93 },
+];
+
+function runSimulation() {
+  if (!isTeamComplete()) return;
+
+  // Quick simulate
+  const result = simulateSeason(state.team);
+  state.simResult = result;
+
+  showResults(result);
+}
+
+function showResults(r) {
+  const success = r.points >= 100;
+
+  // Hide game, show results
+  el('game').style.display = 'none';
+  showScreen('results');
+
+  el('res-badge').textContent = success ? '🏆' : '😓';
+  el('res-title').textContent = success
+    ? 'Century achieved! You\'ve reached 100 points!'
+    : `${r.points} points — ${100 - r.points} short of 100`;
+  el('res-subtitle').textContent = success
+    ? `Your squad joins the Premier League's elite with ${r.points} points across 38 games.`
+    : `A strong effort, but the century mark takes a truly special XI. Try again!`;
+
+  const pd = el('points-display');
+  pd.className = 'points-display ' + (success ? 'success' : 'failure');
+  el('pd-points').textContent = r.points;
+  el('pd-points').className = 'pd-points count-up';
+  el('pd-record').innerHTML = success
+    ? `Man City's record is <strong>100 pts</strong> (2017–18). You matched or beat it.`
+    : `Man City's all-time record: <strong>100 pts</strong> (2017–18)`;
+
+  el('res-wins').textContent   = r.wins;
+  el('res-draws').textContent  = r.draws;
+  el('res-losses').textContent = r.losses;
+  const gd = r.goalsFor - r.goalsAgainst;
+  el('res-gd').textContent = (gd > 0 ? '+' : '') + gd;
+  el('res-gd').style.color = gd >= 0 ? 'var(--accent)' : 'var(--red)';
+
+  // History bars
+  const allEntries = [
+    ...HISTORY,
+    { label:'Your Team', pts: r.points, isYou: true }
+  ].sort((a,b)=>b.pts-a.pts);
+  const maxPts = Math.max(...allEntries.map(e=>e.pts), 100);
+
+  el('history-bars').innerHTML = allEntries.map(e => `
+    <div class="pts-bar-wrapper ${e.isYou?'my-team-row':''}">
+      <div class="pts-bar-name">${e.label}</div>
+      <div class="pts-bar-track"><div class="pts-bar-fill" style="width:${(e.pts/maxPts)*100}%;background:${e.isYou?(success?'var(--accent)':'var(--red)'):'rgba(255,255,255,.25)'}"></div></div>
+      <div class="pts-bar-pts">${e.pts}</div>
+    </div>`).join('');
+
+  // Squad list
+  const posGroups = [
+    { label:'Goalkeeper', pos:'GK', icon:'🧤' },
+    { label:'Defenders', pos:'DEF', icon:'🛡️' },
+    { label:'Midfielders', pos:'MID', icon:'⚙️' },
+    { label:'Forwards', pos:'FWD', icon:'⚽' },
+  ];
+  el('final-squad').innerHTML = posGroups.map(g => `
+    <div class="squad-pos-group">
+      <h4 style="color:var(--muted)">${g.icon} ${g.label}</h4>
+      ${state.team[g.pos].map(p=>`
+        <div class="squad-row">
+          <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+          <div class="sr-name">${p.name}</div>
+          <div class="sr-team">${p.team}</div>
+          <div class="sr-season">${p.season}</div>
+          <div class="sr-stat">${playerRatingStr(p)}</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  // Rating bars
+  el('rating-bars').innerHTML = `
+    <h3 style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:16px">Team Ratings</h3>
+    ${[['Attack',r.teamAttack,'var(--red)'],['Defense',r.teamDefense,'#5599ff'],['Control',r.teamControl,'var(--gold)']].map(([l,v,c])=>`
+    <div class="ts-bar-row" style="margin-bottom:10px">
+      <div class="ts-bar-label">${l}</div>
+      <div class="ts-bar-track"><div class="ts-bar-fill" style="width:${Math.round(v*100)}%;background:${c}"></div></div>
+      <div class="ts-bar-val">${Math.round(v*100)}</div>
+    </div>`).join('')}`;
+}
+
+function backToTeam() {
+  el('results').classList.remove('active');
+  el('game').style.display = 'grid';
+  el('game').classList.add('active');
+}
+
+// ============================================================
+// GAME INIT
+// ============================================================
+function startGame() {
+  resetState();
+  showScreen(null); // hide all .screen divs
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+
+  const game = el('game');
+  game.style.display = 'grid';
+
+  el('spin-btn').style.display = 'block';
+  el('spin-again-btn').style.display = 'none';
+  el('reveal-card').classList.remove('visible');
+
+  updatePitch();
+  updateSummary();
+
+  // Init slot track with placeholder
+  const track = el('slot-track');
+  track.innerHTML = `<div class="slot-item"><div class="si-name" style="color:var(--muted)">Press Spin</div><div class="si-season">to reveal a player</div></div>`;
+  el('slot-track').style.transform = 'translateY(0)';
+}
+
+function resetGame() {
+  el('results').classList.remove('active');
+  el('game').style.display = 'none';
+  document.getElementById('intro').classList.add('active');
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal() { el('modal-overlay').classList.add('open'); }
+function closeModal() { el('modal-overlay').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === el('modal-overlay')) closeModal(); }
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  updatePitch();
+  updateSummary();
+  // Show rules on first visit
+  openModal();
+});
+</script>
+<footer style="text-align:center;padding:20px 24px;font-size:.72rem;color:#555;border-top:1px solid #1e1e32;margin-top:40px">
+  PL100 is an independent project for entertainment purposes only and is not affiliated in any manner with the English Premier League.
+</footer>
+</body>
+</html>
