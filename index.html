@@ -659,7 +659,7 @@ let state = {
 function resetState() {
   state = {
     screen: 'game',
-    team: { GK:[], DEF:[], MID:[], FWD:[] },
+    team: { GK: new Array(SLOTS.GK).fill(null), DEF: new Array(SLOTS.DEF).fill(null), MID: new Array(SLOTS.MID).fill(null), FWD: new Array(SLOTS.FWD).fill(null) },
     spins: 0,
     skips: 0,
     currentPlayer: null,
@@ -702,15 +702,24 @@ function posLabel(pos) {
 }
 
 function isSlotFull(pos) {
-  return state.team[pos].length >= SLOTS[pos];
+  return state.team[pos].filter(Boolean).length >= SLOTS[pos];
 }
 
 function isTeamComplete() {
-  return Object.keys(SLOTS).every(p => state.team[p].length === SLOTS[p]);
+  return Object.keys(SLOTS).every(p => state.team[p].filter(Boolean).length === SLOTS[p]);
 }
 
 function teamSize() {
-  return Object.values(state.team).reduce((s,a) => s+a.length, 0);
+  return Object.values(state.team).reduce((s,a) => s + a.filter(Boolean).length, 0);
+}
+
+function getSplitRows(pos) {
+  const rows = currentLayout.filter(r => r.pos === pos);
+  return rows.length > 1 ? rows : null;
+}
+
+function isSubRowFull(row) {
+  return state.team[row.pos].slice(row.offset, row.offset + row.count).filter(Boolean).length >= row.count;
 }
 
 // ============================================================
@@ -725,10 +734,10 @@ function poissonRandom(lambda) {
 }
 
 function calcRatings(team) {
-  const gk = team.GK[0];
-  const defs = team.DEF;
-  const mids = team.MID;
-  const fwds = team.FWD;
+  const gk = team.GK.filter(Boolean)[0];
+  const defs = team.DEF.filter(Boolean);
+  const mids = team.MID.filter(Boolean);
+  const fwds = team.FWD.filter(Boolean);
 
   let gkRating = 0;
   if (gk) {
@@ -808,7 +817,7 @@ function partialProjection(team) {
   const { teamAttack, teamDefense, teamControl } = calcRatings(team);
   // rough estimate based on what's filled
   const completeness = size / 11;
-  const estAtk = teamAttack / (size > 0 ? Math.max(team.FWD.length/2, team.MID.length/4, .3) : 1);
+  const estAtk = teamAttack / (size > 0 ? Math.max(team.FWD.filter(Boolean).length/2, team.MID.filter(Boolean).length/4, .3) : 1);
   const estDef = teamDefense;
   const lFor = Math.max(0.2, teamAttack*2.5*(1-0.5*0.55) + teamControl*0.4);
   const lAga = Math.max(0.08, 0.5*2.0*(1-teamDefense*0.82));
@@ -859,7 +868,7 @@ const MAX_PER_TEAM = 4;
 function skipsLeft() { return MAX_SKIPS - state.skips; }
 
 function teamCountFor(teamName) {
-  return Object.values(state.team).flat().filter(p => p.team === teamName).length;
+  return Object.values(state.team).flat().filter(p => p && p.team === teamName).length;
 }
 
 // ============================================================
@@ -887,7 +896,7 @@ function buildSlotTrack(finalPlayer) {
 const ITEM_H = 160;
 
 function neededPositions() {
-  return Object.keys(SLOTS).filter(pos => state.team[pos].length < SLOTS[pos]);
+  return Object.keys(SLOTS).filter(pos => state.team[pos].filter(Boolean).length < SLOTS[pos]);
 }
 
 function doSpin() {
@@ -992,9 +1001,25 @@ function revealPlayer(player) {
     : `✕ Skip (${skipsLeft()} left)`;
 
   if (canAdd) {
-    actions.innerHTML = `
-      <button class="btn-primary" onclick="acceptPlayer()">✓ Add to Team</button>
-      <button class="btn-danger ${noSkips ? 'skip-disabled' : ''}" onclick="${noSkips ? 'showNoSkipsWarning()' : 'rejectPlayer()'}">${skipLabel}</button>`;
+    const splitRows = getSplitRows(player.pos);
+    const availableRows = splitRows ? splitRows.filter(r => !isSubRowFull(r)) : null;
+    const skipBtn = `<button class="btn-danger ${noSkips ? 'skip-disabled' : ''}" onclick="${noSkips ? 'showNoSkipsWarning()' : 'rejectPlayer()'}">${skipLabel}</button>`;
+    if (availableRows && availableRows.length > 1) {
+      // Multiple sub-rows available — let user choose
+      const rowBtns = availableRows.map(r =>
+        `<button class="btn-primary" onclick="acceptPlayerToSubRow(${r.offset},${r.count})">✓ Add as ${r.label}</button>`
+      ).join('');
+      actions.innerHTML = rowBtns + skipBtn;
+    } else if (availableRows && availableRows.length === 1) {
+      // Only one sub-row left — label it clearly but no real choice needed
+      actions.innerHTML = `
+        <button class="btn-primary" onclick="acceptPlayerToSubRow(${availableRows[0].offset},${availableRows[0].count})">✓ Add as ${availableRows[0].label}</button>
+        ${skipBtn}`;
+    } else {
+      actions.innerHTML = `
+        <button class="btn-primary" onclick="acceptPlayer()">✓ Add to Team</button>
+        ${skipBtn}`;
+    }
   } else {
     // Can't add — forced to spin (counts as a skip if skips remain, else free)
     actions.innerHTML = `<button class="btn-secondary" onclick="rejectPlayer()">Spin Again</button>`;
@@ -1004,19 +1029,34 @@ function revealPlayer(player) {
   el('spin-again-btn').style.display = canAdd ? 'none' : 'block';
 }
 
-function acceptPlayer() {
-  const p = state.currentPlayer;
-  if (!p || isSlotFull(p.pos)) return;
-  state.team[p.pos].push(p);
+function placePlayer(p, targetOffset, targetCount) {
+  // Find first null slot in the target range (or anywhere in pos array if no range given)
+  const arr = state.team[p.pos];
+  const start = (targetOffset !== undefined) ? targetOffset : 0;
+  const end   = (targetCount  !== undefined) ? targetOffset + targetCount : arr.length;
+  for (let i = start; i < end; i++) {
+    if (!arr[i]) { arr[i] = p; break; }
+  }
   state.usedIds.add(p.id);
   state.usedNames.add(p.name);
-  // Remove all other seasons of the same player from the pool
   state.spinPool = state.spinPool.filter(q => q.name !== p.name);
   el('reveal-card').classList.remove('visible');
   el('spin-btn').style.display = 'block';
   el('spin-again-btn').style.display = 'none';
   updatePitch();
   updateSummary();
+}
+
+function acceptPlayer() {
+  const p = state.currentPlayer;
+  if (!p || isSlotFull(p.pos)) return;
+  placePlayer(p);
+}
+
+function acceptPlayerToSubRow(offset, count) {
+  const p = state.currentPlayer;
+  if (!p || isSlotFull(p.pos)) return;
+  placePlayer(p, offset, count);
 }
 
 function rejectPlayer() {
@@ -1041,7 +1081,7 @@ function showNoSkipsWarning() {
 
 function removePlayer(pos, idx) {
   if (skipsLeft() <= 0) return;
-  state.team[pos].splice(idx, 1);
+  state.team[pos][idx] = null;
   updatePitch();
   updateSummary();
 }
@@ -1084,7 +1124,7 @@ function updatePitch() {
   } else {
     btn.classList.remove('ready');
     const need = Object.keys(SLOTS).map(p => {
-      const rem = SLOTS[p] - state.team[p].length;
+      const rem = SLOTS[p] - state.team[p].filter(Boolean).length;
       if (rem > 0) return `${rem} ${p}`;
       return null;
     }).filter(Boolean);
@@ -1194,7 +1234,7 @@ function showResults(r) {
   el('final-squad').innerHTML = posGroups.map(g => `
     <div class="squad-pos-group">
       <h4 style="color:var(--muted)">${g.icon} ${g.label}</h4>
-      ${state.team[g.pos].map(p=>`
+      ${state.team[g.pos].filter(Boolean).map(p=>`
         <div class="squad-row">
           <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
           <div class="sr-name">${p.name}</div>
@@ -1376,7 +1416,7 @@ async function shareResult() {
   const lineH = 46;
 
   posGroups.forEach(g => {
-    state.team[g.pos].forEach(p => {
+    state.team[g.pos].filter(Boolean).forEach(p => {
       // Coloured dot
       ctx.fillStyle = p.color || '#ffffff';
       ctx.beginPath();
