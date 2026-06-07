@@ -351,12 +351,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
         <div class="pitch-center"></div>
         <div class="pitch-halfway"></div>
       </div>
-      <div style="position:relative;z-index:1">
-        <div class="formation-row" id="row-gk"></div>
-        <div class="formation-row" id="row-def"></div>
-        <div class="formation-row" id="row-mid"></div>
-        <div class="formation-row" id="row-fwd"></div>
-      </div>
+      <div id="pitch-rows" style="position:relative;z-index:1"></div>
     </div>
 
     <div class="team-summary" id="team-summary">
@@ -665,13 +660,29 @@ function resetState() {
 }
 
 const FORMATIONS = {
-  '4-4-2':   { GK:1, DEF:4, MID:4, FWD:2 },
-  '4-3-3':   { GK:1, DEF:4, MID:3, FWD:3 },
-  '4-2-3-1': { GK:1, DEF:4, MID:5, FWD:1 },
-  '3-4-3':   { GK:1, DEF:3, MID:4, FWD:3 },
-  '3-5-2':   { GK:1, DEF:3, MID:5, FWD:2 },
+  '4-4-2':   {
+    slots: { GK:1, DEF:4, MID:4, FWD:2 },
+    layout: [{pos:'GK',count:1,offset:0,label:'GK'},{pos:'DEF',count:4,offset:0,label:'DEF'},{pos:'MID',count:4,offset:0,label:'MID'},{pos:'FWD',count:2,offset:0,label:'FWD'}]
+  },
+  '4-3-3':   {
+    slots: { GK:1, DEF:4, MID:3, FWD:3 },
+    layout: [{pos:'GK',count:1,offset:0,label:'GK'},{pos:'DEF',count:4,offset:0,label:'DEF'},{pos:'MID',count:3,offset:0,label:'MID'},{pos:'FWD',count:3,offset:0,label:'FWD'}]
+  },
+  '4-2-3-1': {
+    slots: { GK:1, DEF:4, MID:5, FWD:1 },
+    layout: [{pos:'GK',count:1,offset:0,label:'GK'},{pos:'DEF',count:4,offset:0,label:'DEF'},{pos:'MID',count:2,offset:0,label:'DM'},{pos:'MID',count:3,offset:2,label:'AM'},{pos:'FWD',count:1,offset:0,label:'FWD'}]
+  },
+  '3-4-3':   {
+    slots: { GK:1, DEF:3, MID:4, FWD:3 },
+    layout: [{pos:'GK',count:1,offset:0,label:'GK'},{pos:'DEF',count:3,offset:0,label:'DEF'},{pos:'MID',count:4,offset:0,label:'MID'},{pos:'FWD',count:3,offset:0,label:'FWD'}]
+  },
+  '3-5-2':   {
+    slots: { GK:1, DEF:3, MID:5, FWD:2 },
+    layout: [{pos:'GK',count:1,offset:0,label:'GK'},{pos:'DEF',count:3,offset:0,label:'DEF'},{pos:'MID',count:2,offset:0,label:'WB'},{pos:'MID',count:3,offset:2,label:'MID'},{pos:'FWD',count:2,offset:0,label:'FWD'}]
+  },
 };
-let SLOTS = FORMATIONS['4-4-2'];
+let SLOTS = FORMATIONS['4-4-2'].slots;
+let currentLayout = FORMATIONS['4-4-2'].layout;
 
 function posLabel(pos) {
   return pos;
@@ -1025,27 +1036,29 @@ function removePlayer(pos, idx) {
 // PITCH RENDER
 // ============================================================
 function updatePitch() {
-  const rows = { GK:'row-gk', DEF:'row-def', MID:'row-mid', FWD:'row-fwd' };
-  Object.entries(rows).forEach(([pos, rowId]) => {
-    const row = el(rowId);
-    row.innerHTML = '';
-    const max = SLOTS[pos];
-    for (let i=0; i<max; i++) {
-      const p = state.team[pos][i];
+  const container = el('pitch-rows');
+  container.innerHTML = '';
+  currentLayout.forEach(({ pos, count, offset, label }) => {
+    const row = document.createElement('div');
+    row.className = 'formation-row';
+    for (let i = 0; i < count; i++) {
+      const teamIdx = offset + i;
+      const p = state.team[pos][teamIdx];
       const slot = document.createElement('div');
       slot.className = 'pos-slot' + (p ? ' filled' : '');
       if (p) {
         const shortName = p.name.split(' ').pop();
         slot.style.borderColor = p.color;
         slot.innerHTML = `
-          <div class="ps-label">${pos}</div>
+          <div class="ps-label">${label}</div>
           <div class="ps-name">${shortName}</div>
-          <div class="ps-remove" onclick="removePlayer('${pos}',${i})">×</div>`;
+          <div class="ps-remove" onclick="removePlayer('${pos}',${teamIdx})">×</div>`;
       } else {
-        slot.innerHTML = `<div class="ps-label">${pos}</div>`;
+        slot.innerHTML = `<div class="ps-label">${label}</div>`;
       }
       row.appendChild(slot);
     }
+    container.appendChild(row);
   });
 
   // Simulate button state
@@ -1199,7 +1212,8 @@ function backToTeam() {
 // ============================================================
 function startGame() {
   const chosen = document.querySelector('input[name="formation"]:checked')?.value || '4-4-2';
-  SLOTS = FORMATIONS[chosen];
+  SLOTS = FORMATIONS[chosen].slots;
+  currentLayout = FORMATIONS[chosen].layout;
   resetState();
   showScreen(null); // hide all .screen divs
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
