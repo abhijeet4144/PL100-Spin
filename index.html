@@ -778,8 +778,8 @@ function simulateSeason(team, runs=3) {
     for (let g=0; g<38; g++) {
       const oppAtk = Math.random()*0.6 + 0.2;
       const oppDef = Math.random()*0.6 + 0.2;
-      const lFor = Math.max(0.2, teamAttack*2.5*(1-oppDef*0.55) + teamControl*0.4);
-      const lAga = Math.max(0.08, oppAtk*2.0*(1-teamDefense*0.82));
+      const lFor = Math.max(0.2, teamAttack*3.0*(1-oppDef*0.50) + teamControl*0.4);
+      const lAga = Math.max(0.08, oppAtk*1.6*(1-teamDefense*0.82));
       const scored = poissonRandom(lFor);
       const conceded = poissonRandom(lAga);
       gf += scored; ga += conceded;
