@@ -224,8 +224,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 <body>
 
 <div id="header">
-  <div class="lion">🦁</div>
-  <div>
+  <div class="lion" onclick="resetGame()" style="cursor:pointer">🦁</div>
+  <div onclick="resetGame()" style="cursor:pointer">
     <h1>PL <span>100</span></h1>
     <div class="subtitle">Build your Premier League Century Side</div>
   </div>
@@ -286,8 +286,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       </ul>
     </div>
 
-    <div class="modal-footer">
+    <div class="modal-footer" style="display:flex;flex-direction:column;align-items:center;gap:14px">
       <button class="btn-primary" onclick="closeModal()" style="font-size:.95rem;padding:12px 36px">Got it — let's play!</button>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="dont-show-again" style="accent-color:var(--accent);width:15px;height:15px">
+        Don't show again
+      </label>
     </div>
   </div>
 </div>
@@ -1307,7 +1311,10 @@ function resetGame() {
 // MODAL
 // ============================================================
 function openModal() { el('modal-overlay').classList.add('open'); }
-function closeModal() { el('modal-overlay').classList.remove('open'); }
+function closeModal() {
+  if (el('dont-show-again')?.checked) localStorage.setItem('pl100_hide_rules', '1');
+  el('modal-overlay').classList.remove('open');
+}
 function closeModalOutside(e) { if (e.target === el('modal-overlay')) closeModal(); }
 
 // ============================================================
@@ -1316,8 +1323,8 @@ function closeModalOutside(e) { if (e.target === el('modal-overlay')) closeModal
 document.addEventListener('DOMContentLoaded', () => {
   updatePitch();
   updateSummary();
-  // Show rules on first visit
-  openModal();
+  // Show rules on first visit (unless user opted out)
+  if (!localStorage.getItem('pl100_hide_rules')) openModal();
   // Formation picker highlight
   document.querySelectorAll('.formation-option').forEach(opt => {
     opt.addEventListener('click', () => {
