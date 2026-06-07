@@ -1036,6 +1036,7 @@ function showNoSkipsWarning() {
 }
 
 function removePlayer(pos, idx) {
+  if (skipsLeft() <= 0) return;
   state.team[pos].splice(idx, 1);
   updatePitch();
   updateSummary();
@@ -1061,7 +1062,7 @@ function updatePitch() {
         slot.innerHTML = `
           <div class="ps-label">${label}</div>
           <div class="ps-name">${shortName}</div>
-          <div class="ps-remove" onclick="removePlayer('${pos}',${teamIdx})">×</div>`;
+          ${skipsLeft() > 0 ? `<div class="ps-remove" onclick="removePlayer('${pos}',${teamIdx})">×</div>` : ''}`;
       } else {
         slot.innerHTML = `<div class="ps-label">${label}</div>`;
       }
