@@ -428,8 +428,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
   <div class="results-actions">
     <button class="btn-primary" onclick="resetGame()">🏆 Spin Again</button>
+    <button class="btn-secondary" onclick="shareResult()">📤 Share Result</button>
     <button class="btn-secondary" onclick="backToTeam()">← Edit Squad</button>
   </div>
+  <canvas id="share-canvas" style="display:none"></canvas>
 </div>
 
 <script>
@@ -650,7 +652,8 @@ let state = {
   spinPool: [],
   usedIds: new Set(),
   usedNames: new Set(),
-  simResult: null
+  simResult: null,
+  formation: '4-4-2'
 };
 
 function resetState() {
@@ -664,7 +667,8 @@ function resetState() {
     spinPool: [...PLAYERS],
     usedIds: new Set(),
     usedNames: new Set(),
-    simResult: null
+    simResult: null,
+    formation: state.formation || '4-4-2'
   };
 }
 
@@ -1225,6 +1229,7 @@ function startGame() {
   SLOTS = FORMATIONS[chosen].slots;
   currentLayout = FORMATIONS[chosen].layout;
   resetState();
+  state.formation = chosen;
   showScreen(null); // hide all .screen divs
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
 
@@ -1273,6 +1278,172 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// ============================================================
+// SHARE RESULT
+// ============================================================
+async function shareResult() {
+  const r = state.simResult;
+  if (!r) return;
+
+  const W = 1080, H = 1350;
+  const canvas = el('share-canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#0a0e1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle accent top bar
+  const success = r.points >= 100;
+  const accentColor = success ? '#00ff87' : '#e63946';
+  ctx.fillStyle = accentColor;
+  ctx.fillRect(0, 0, W, 8);
+
+  // Header: PL 100
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 52px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PL 100', W / 2, 80);
+
+  // Subheader: formation
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.font = '32px system-ui, sans-serif';
+  ctx.fillText(state.formation, W / 2, 126);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(60, 148); ctx.lineTo(W - 60, 148); ctx.stroke();
+
+  // Points
+  ctx.fillStyle = accentColor;
+  ctx.font = 'bold 200px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(r.points, W / 2, 350);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '34px system-ui, sans-serif';
+  ctx.fillText('points across 38 games', W / 2, 400);
+
+  // W / D / L / GD boxes
+  const stats = [
+    { label: 'W', val: r.wins,   color: '#00ff87' },
+    { label: 'D', val: r.draws,  color: '#ffd700' },
+    { label: 'L', val: r.losses, color: '#e63946' },
+    { label: 'GD', val: (r.goalsFor - r.goalsAgainst > 0 ? '+' : '') + (r.goalsFor - r.goalsAgainst), color: '#ffffff' },
+  ];
+  const boxW = 200, boxH = 110, boxGap = 20;
+  const totalBoxW = stats.length * boxW + (stats.length - 1) * boxGap;
+  const boxStartX = (W - totalBoxW) / 2;
+  const boxY = 440;
+
+  stats.forEach((s, i) => {
+    const x = boxStartX + i * (boxW + boxGap);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    roundRect(ctx, x, boxY, boxW, boxH, 16);
+    ctx.fill();
+    ctx.fillStyle = s.color;
+    ctx.font = 'bold 52px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.val, x + boxW / 2, boxY + 62);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '26px system-ui, sans-serif';
+    ctx.fillText(s.label, x + boxW / 2, boxY + 97);
+  });
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath(); ctx.moveTo(60, 590); ctx.lineTo(W - 60, 590); ctx.stroke();
+
+  // Squad title
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '26px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SQUAD', 80, 636);
+
+  // Squad list
+  const posGroups = [
+    { label: 'GK',  pos: 'GK',  icon: '🧤' },
+    { label: 'DEF', pos: 'DEF', icon: '🛡' },
+    { label: 'MID', pos: 'MID', icon: '⚙' },
+    { label: 'FWD', pos: 'FWD', icon: '⚽' },
+  ];
+
+  let yPos = 672;
+  const lineH = 46;
+
+  posGroups.forEach(g => {
+    state.team[g.pos].forEach(p => {
+      // Coloured dot
+      ctx.fillStyle = p.color || '#ffffff';
+      ctx.beginPath();
+      ctx.arc(92, yPos - 9, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Position badge
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = 'bold 22px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(g.label, 108, yPos);
+
+      // Player name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 30px system-ui, sans-serif';
+      ctx.fillText(p.name, 172, yPos);
+
+      // Season — right aligned
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '24px system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(p.season, W - 80, yPos);
+
+      yPos += lineH;
+    });
+  });
+
+  // URL footer
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = '28px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('pl100spin.com', W / 2, H - 40);
+
+  // Convert to blob and share/download
+  canvas.toBlob(async blob => {
+    const file = new File([blob], 'pl100-result.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `PL 100 — ${r.points} points`,
+          text: `I ${success ? 'hit' : 'scored'} ${r.points} points in PL 100! Can you reach 100? pl100spin.com`,
+        });
+        return;
+      } catch(e) { /* fell through to download */ }
+    }
+    // Fallback: download image
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pl100-result.png';
+    a.click();
+  }, 'image/png');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
 </script>
 <footer style="text-align:center;padding:20px 24px;font-size:.72rem;color:#555;border-top:1px solid #1e1e32;margin-top:40px">
   PL100 is an independent project for entertainment purposes only and is not affiliated in any manner with the English Premier League.
