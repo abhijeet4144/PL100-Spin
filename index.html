@@ -1619,10 +1619,10 @@ function openSubmitModal() {
   if (lbSubmittedThisRun) { openLeaderboardModal(); return; }
   el('lb-name-input').value = '';
   el('lb-submit-msg').textContent = '';
-  el('lb-submit-overlay').classList.add('open');
+  el('lb-submit-overlay').style.display = 'flex';
   setTimeout(() => el('lb-name-input').focus(), 100);
 }
-function closeLbSubmitBtn() { el('lb-submit-overlay').classList.remove('open'); }
+function closeLbSubmitBtn() { el('lb-submit-overlay').style.display = 'none'; }
 function closeLbSubmit(e) { if (e.target === el('lb-submit-overlay')) closeLbSubmitBtn(); }
 
 async function submitScore() {
@@ -1656,7 +1656,7 @@ async function submitScore() {
     lbMyEntry = { name, points: r.points };
     el('lb-submit-btn').textContent = '✅ Submitted';
     el('lb-submit-btn').disabled = true;
-    el('lb-submit-overlay').classList.remove('open');
+    el('lb-submit-overlay').style.display = 'none';
     openLeaderboardModal();
   } catch (_) {
     msgEl.style.color = 'var(--red)';
@@ -1665,7 +1665,7 @@ async function submitScore() {
 }
 
 async function openLeaderboardModal() {
-  el('lb-view-overlay').classList.add('open');
+  el('lb-view-overlay').style.display = 'flex';
   el('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px">Loading…</div>';
   try {
     const res = await fetch(LB_API);
@@ -1675,7 +1675,7 @@ async function openLeaderboardModal() {
     el('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--red);padding:32px">Could not load leaderboard.</div>';
   }
 }
-function closeLbViewBtn() { el('lb-view-overlay').classList.remove('open'); }
+function closeLbViewBtn() { el('lb-view-overlay').style.display = 'none'; }
 function closeLbView(e) { if (e.target === el('lb-view-overlay')) closeLbViewBtn(); }
 
 function renderLeaderboard(entries) {
