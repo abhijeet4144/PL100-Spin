@@ -16,13 +16,18 @@ exports.handler = async (event) => {
   let store;
   try {
     const siteID = process.env.NETLIFY_SITE_ID;
-    const token  = process.env.NETLIFY_AUTH_TOKEN;
-    if (!siteID || !token) {
-      throw new Error('NETLIFY_SITE_ID and NETLIFY_AUTH_TOKEN env vars must be set');
+    const token  = process.env.PL100_BLOBS_TOKEN;
+
+    if (!siteID) {
+      return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: 'Missing NETLIFY_SITE_ID env var' }) };
     }
+    if (!token) {
+      return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: 'Missing PL100_BLOBS_TOKEN env var' }) };
+    }
+
     store = getStore({ name: 'leaderboard', siteID, token });
   } catch (e) {
-    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: 'Store init failed: ' + e.message }) };
+    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: 'getStore failed: ' + e.message }) };
   }
 
   // GET: return top scores
@@ -30,7 +35,7 @@ exports.handler = async (event) => {
     try {
       const data = await store.get('entries', { type: 'json' });
       return { statusCode: 200, headers: HEADERS, body: JSON.stringify(data || []) };
-    } catch (_) {
+    } catch (e) {
       return { statusCode: 200, headers: HEADERS, body: JSON.stringify([]) };
     }
   }
