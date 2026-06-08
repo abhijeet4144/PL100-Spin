@@ -15,7 +15,6 @@ export default async (req) => {
 
   const store = getStore('leaderboard');
 
-  // ── GET: return top scores ──────────────────────────────────
   if (req.method === 'GET') {
     try {
       const data = await store.get('entries', { type: 'json' });
@@ -25,7 +24,6 @@ export default async (req) => {
     }
   }
 
-  // ── POST: add a new entry ───────────────────────────────────
   if (req.method === 'POST') {
     let body;
     try { body = await req.json(); } catch (_) { body = {}; }
