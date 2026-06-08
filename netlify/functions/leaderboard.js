@@ -15,7 +15,12 @@ exports.handler = async (event) => {
 
   let store;
   try {
-    store = getStore('leaderboard');
+    const siteID = process.env.NETLIFY_SITE_ID;
+    const token  = process.env.NETLIFY_AUTH_TOKEN;
+    if (!siteID || !token) {
+      throw new Error('NETLIFY_SITE_ID and NETLIFY_AUTH_TOKEN env vars must be set');
+    }
+    store = getStore({ name: 'leaderboard', siteID, token });
   } catch (e) {
     return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: 'Store init failed: ' + e.message }) };
   }
