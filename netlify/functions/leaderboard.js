@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs';
+const { getStore } = require('@netlify/blobs');
 
 const HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -8,32 +8,39 @@ const HEADERS = {
 
 const MAX_ENTRIES = 100;
 
-export default async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('', { status: 200, headers: HEADERS });
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: HEADERS, body: '' };
   }
 
-  const store = getStore('leaderboard');
+  let store;
+  try {
+    store = getStore('leaderboard');
+  } catch (e) {
+    return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: 'Store init failed: ' + e.message }) };
+  }
 
-  if (req.method === 'GET') {
+  // GET: return top scores
+  if (event.httpMethod === 'GET') {
     try {
       const data = await store.get('entries', { type: 'json' });
-      return Response.json(data || [], { headers: HEADERS });
+      return { statusCode: 200, headers: HEADERS, body: JSON.stringify(data || []) };
     } catch (_) {
-      return Response.json([], { headers: HEADERS });
+      return { statusCode: 200, headers: HEADERS, body: JSON.stringify([]) };
     }
   }
 
-  if (req.method === 'POST') {
+  // POST: add a new entry
+  if (event.httpMethod === 'POST') {
     let body;
-    try { body = await req.json(); } catch (_) { body = {}; }
+    try { body = JSON.parse(event.body || '{}'); } catch (_) { body = {}; }
 
     const name = (body.name || '').trim().slice(0, 24);
     if (!name) {
-      return Response.json({ error: 'Name is required' }, { status: 400, headers: HEADERS });
+      return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: 'Name is required' }) };
     }
     if (typeof body.points !== 'number' || body.points < 0 || body.points > 114) {
-      return Response.json({ error: 'Invalid score' }, { status: 400, headers: HEADERS });
+      return { statusCode: 400, headers: HEADERS, body: JSON.stringify({ error: 'Invalid score' }) };
     }
 
     let entries = [];
@@ -59,10 +66,8 @@ export default async (req) => {
       e => e.name === name && e.points === body.points && e.date === today
     ) + 1;
 
-    return Response.json({ ok: true, rank }, { headers: HEADERS });
+    return { statusCode: 200, headers: HEADERS, body: JSON.stringify({ ok: true, rank }) };
   }
 
-  return Response.json({ error: 'Method not allowed' }, { status: 405, headers: HEADERS });
+  return { statusCode: 405, headers: HEADERS, body: JSON.stringify({ error: 'Method not allowed' }) };
 };
-
-export const config = { path: '/api/leaderboard' };
