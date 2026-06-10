@@ -855,10 +855,12 @@ function teamSize() {
 }
 
 function getSplitRows(pos) {
-  const rows = currentLayout.filter(r => r.pos === pos);
-  if (rows.length > 1) return rows;
+  // subPositions config carries subPos type info — always prefer it when present
   const subPos = FORMATIONS[state.formation]?.subPositions?.[pos];
-  return subPos || null;
+  if (subPos) return subPos;
+  // Fall back to layout rows only when no subPositions defined
+  const rows = currentLayout.filter(r => r.pos === pos);
+  return rows.length > 1 ? rows : null;
 }
 
 function isSubRowFull(row) {
