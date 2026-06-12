@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Match 12-0</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#e8eaf6;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── INTRO ── */
+#intro{align-items:center;justify-content:center;padding:2rem 1rem;background:radial-gradient(ellipse at 50% 0%,#1a3a5c 0%,#0a1628 70%)}
+.intro-logo{font-size:3.5rem;font-weight:900;letter-spacing:-2px;color:#f0c040;text-shadow:0 0 40px #f0c04060;text-align:center;margin-bottom:.25rem}
+.intro-sub{font-size:1.1rem;color:#90a4c0;text-align:center;margin-bottom:2rem}
+.strategy-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;width:100%;max-width:520px;margin-bottom:1.5rem}
+.strat-card{border:2px solid #1e3a5f;border-radius:12px;padding:1rem;cursor:pointer;transition:.2s;background:#0d1f35}
+.strat-card:hover{border-color:#f0c040;background:#13253f}
+.strat-card.selected{border-color:#f0c040;background:#1a3040;box-shadow:0 0 0 2px #f0c04040}
+.strat-name{font-weight:700;font-size:.95rem;margin-bottom:.25rem;color:#f0c040}
+.strat-slots{font-size:.72rem;color:#7090b0;line-height:1.5}
+.rules-box{background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:1rem 1.25rem;max-width:520px;width:100%;margin-bottom:1.5rem}
+.rules-box h3{color:#f0c040;font-size:.85rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:.6rem}
+.rules-box ul{list-style:none;font-size:.82rem;color:#90a4c0;display:flex;flex-direction:column;gap:.3rem}
+.rules-box li::before{content:'▸ ';color:#f0c040}
+.btn-primary{background:#f0c040;color:#0a1628;font-weight:800;font-size:1.05rem;padding:.85rem 2.5rem;border:none;border-radius:50px;cursor:pointer;transition:.2s;letter-spacing:.5px}
+.btn-primary:hover{background:#ffd060;transform:scale(1.03)}
+
+/* ── GAME ── */
+#game{flex-direction:row;height:100vh;overflow:hidden}
+#spin-panel{width:340px;min-width:280px;background:#0d1f35;border-right:1px solid #1a3a5c;display:flex;flex-direction:column;padding:1rem;gap:.75rem;overflow-y:auto}
+#team-panel{flex:1;display:flex;flex-direction:column;padding:1rem;gap:.75rem;overflow-y:auto}
+
+/* slot machine */
+.slot-label{font-size:.7rem;color:#90a4c0;text-transform:uppercase;letter-spacing:1px;text-align:center}
+.slot-wrap{position:relative;height:160px;overflow:hidden;border-radius:14px;background:#060f1e;border:1px solid #1a3a5c}
+.slot-wrap::before,.slot-wrap::after{content:'';position:absolute;left:0;right:0;height:56px;z-index:2;pointer-events:none}
+.slot-wrap::before{top:0;background:linear-gradient(to bottom,#060f1e,transparent)}
+.slot-wrap::after{bottom:0;background:linear-gradient(to top,#060f1e,transparent)}
+.slot-track{position:absolute;left:0;right:0;top:0;will-change:transform}
+.slot-item{height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:1rem;user-select:none}
+.slot-pos{font-size:.68rem;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:20px;background:#1a3a5c;color:#90c4e8}
+.slot-name{font-size:1.05rem;font-weight:800;color:#fff;text-align:center;line-height:1.2}
+.slot-nation{font-size:.75rem;color:#90a4c0}
+.slot-era{font-size:.68rem;color:#5a7090}
+
+/* player reveal card */
+.reveal-card{border-radius:14px;padding:1rem;border:2px solid transparent;display:none;flex-direction:column;gap:.5rem}
+.reveal-card.visible{display:flex}
+.reveal-header{display:flex;align-items:center;gap:.75rem}
+.reveal-badge{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0}
+.reveal-name{font-size:1rem;font-weight:800;line-height:1.2}
+.reveal-meta{font-size:.72rem;color:#90a4c0}
+.reveal-stats{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
+.stat-chip{background:#060f1e;border-radius:8px;padding:.35rem .5rem;text-align:center}
+.stat-val{font-size:.95rem;font-weight:800;color:#f0c040}
+.stat-lbl{font-size:.6rem;color:#5a7090;text-transform:uppercase;letter-spacing:.5px}
+.reveal-note{font-size:.7rem;color:#e05050;background:#2a0f0f;border-radius:6px;padding:.35rem .6rem;display:none}
+.reveal-note.visible{display:block}
+.action-row{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn-accept{flex:1;background:#2a6a3a;color:#7deba0;font-weight:700;font-size:.85rem;padding:.6rem;border:1px solid #3a8a50;border-radius:8px;cursor:pointer;transition:.2s;min-width:80px}
+.btn-accept:hover:not(:disabled){background:#3a8a50}
+.btn-accept:disabled{opacity:.4;cursor:not-allowed}
+.btn-skip{background:#2a1a1a;color:#e07070;font-weight:700;font-size:.85rem;padding:.6rem 1rem;border:1px solid #5a2a2a;border-radius:8px;cursor:pointer;transition:.2s}
+.btn-skip:hover:not(:disabled){background:#3a2020}
+.btn-skip:disabled{opacity:.4;cursor:not-allowed}
+.btn-spin{width:100%;background:linear-gradient(135deg,#f0c040,#e0a020);color:#0a1628;font-weight:800;font-size:1rem;padding:.85rem;border:none;border-radius:12px;cursor:pointer;transition:.2s;letter-spacing:.5px}
+.btn-spin:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+.btn-spin:disabled{opacity:.5;cursor:not-allowed}
+
+/* skips + stats bar */
+.meta-row{display:flex;justify-content:space-between;align-items:center;font-size:.75rem}
+.skip-dots{display:flex;gap:4px}
+.skip-dot{width:10px;height:10px;border-radius:50%;background:#5a2a2a;transition:.3s}
+.skip-dot.used{background:#e05050}
+.skip-dot.available{background:#3a8a50}
+
+/* team panel */
+.panel-title{font-size:.7rem;color:#90a4c0;text-transform:uppercase;letter-spacing:1px}
+.lineup{display:flex;flex-direction:column;gap:.4rem}
+.lineup-row{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;background:#0d1f35;border-radius:10px;border:1px solid #1a3a5c;min-height:48px;cursor:default;transition:.2s;position:relative}
+.lineup-row.empty{border-style:dashed;opacity:.5}
+.lineup-row.empty::after{content:'...';position:absolute;left:50%;transform:translateX(-50%);color:#5a7090;font-size:.75rem}
+.lineup-row:not(.empty):hover .remove-btn{opacity:1}
+.lineup-num{font-size:.72rem;color:#5a7090;width:16px;text-align:right;flex-shrink:0}
+.lineup-badge{width:28px;height:28px;border-radius:6px;font-size:.58rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lineup-info{flex:1;min-width:0}
+.lineup-name{font-size:.82rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lineup-sub{font-size:.65rem;color:#7090b0}
+.remove-btn{opacity:0;background:#5a1a1a;color:#e05050;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:.7rem;transition:.2s;flex-shrink:0}
+.remove-btn:hover{background:#7a2020}
+
+/* rating bars */
+.rating-bars{display:flex;flex-direction:column;gap:.5rem}
+.bar-row{display:flex;align-items:center;gap:.6rem}
+.bar-label{font-size:.7rem;color:#90a4c0;width:56px;flex-shrink:0}
+.bar-track{flex:1;height:6px;background:#1a3a5c;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s ease;width:0}
+.bar-val{font-size:.7rem;color:#f0c040;width:32px;text-align:right;flex-shrink:0}
+.projection{font-size:.75rem;color:#90a4c0;text-align:center}
+.projection span{color:#f0c040;font-weight:700}
+
+/* simulate btn */
+.btn-simulate{width:100%;background:linear-gradient(135deg,#1a6a8a,#0e4a6a);color:#60d0f0;font-weight:800;font-size:.95rem;padding:.85rem;border:1px solid #2a8aaa;border-radius:12px;cursor:pointer;transition:.2s;letter-spacing:.5px}
+.btn-simulate:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+.btn-simulate:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── RESULTS ── */
+#results{align-items:center;justify-content:flex-start;padding:2rem 1rem;background:radial-gradient(ellipse at 50% 0%,#1a3a5c 0%,#0a1628 70%);overflow-y:auto}
+.result-inner{width:100%;max-width:600px;display:flex;flex-direction:column;gap:1.25rem}
+.result-score{text-align:center}
+.score-big{font-size:4rem;font-weight:900;letter-spacing:-2px;color:#f0c040}
+.score-label{font-size:.85rem;color:#90a4c0;margin-top:.25rem}
+.wdl-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.wdl-card{background:#0d1f35;border-radius:12px;padding:.75rem;text-align:center;border:1px solid #1a3a5c}
+.wdl-num{font-size:2rem;font-weight:900}
+.wdl-lbl{font-size:.7rem;color:#90a4c0;text-transform:uppercase;letter-spacing:.5px}
+.wdl-card.wins .wdl-num{color:#4caf50}
+.wdl-card.draws .wdl-num{color:#f0c040}
+.wdl-card.losses .wdl-num{color:#e05050}
+.hist-section{background:#0d1f35;border-radius:12px;padding:1rem;border:1px solid #1a3a5c}
+.hist-title{font-size:.72rem;color:#90a4c0;text-transform:uppercase;letter-spacing:1px;margin-bottom:.75rem}
+.hist-bar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem}
+.hist-label{font-size:.72rem;color:#90a4c0;width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-track{flex:1;height:10px;background:#060f1e;border-radius:5px;overflow:hidden}
+.hist-fill{height:100%;border-radius:5px;background:#1a6a8a;transition:width .6s ease}
+.hist-fill.you{background:#f0c040}
+.hist-pts{font-size:.72rem;color:#90a4c0;width:40px;text-align:right;flex-shrink:0}
+.verdict{text-align:center;padding:1rem;background:#0d1f35;border-radius:12px;border:1px solid #1a3a5c}
+.verdict-emoji{font-size:2rem;margin-bottom:.4rem}
+.verdict-text{font-size:1rem;font-weight:700;margin-bottom:.25rem}
+.verdict-sub{font-size:.78rem;color:#90a4c0}
+.squad-section{background:#0d1f35;border-radius:12px;padding:1rem;border:1px solid #1a3a5c}
+.squad-group{margin-bottom:.75rem}
+.squad-group-label{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:#90a4c0;margin-bottom:.35rem}
+.squad-player{display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid #0d1f35}
+.squad-player:last-child{border-bottom:none}
+.squad-badge{width:22px;height:22px;border-radius:5px;font-size:.55rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.squad-name{font-size:.8rem;font-weight:600;flex:1}
+.squad-nation{font-size:.68rem;color:#7090b0}
+.result-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.btn-secondary{flex:1;background:#0d1f35;color:#90a4c0;font-weight:700;font-size:.85rem;padding:.7rem 1rem;border:1px solid #1a3a5c;border-radius:8px;cursor:pointer;transition:.2s;min-width:120px;text-align:center}
+.btn-secondary:hover{border-color:#f0c040;color:#f0c040}
+
+/* responsive */
+@media(max-width:640px){
+  #game{flex-direction:column;height:auto;overflow:auto}
+  #spin-panel{width:100%;border-right:none;border-bottom:1px solid #1a3a5c}
+  .strategy-grid{grid-template-columns:1fr}
+  .wdl-cards{gap:.5rem}
+  .result-actions{flex-direction:column}
+  .action-row{flex-wrap:nowrap}
+  .btn-accept{min-width:0}
+}
+.lb-row{display:grid;grid-template-columns:36px 1fr 56px 80px 80px;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;font-size:.85rem}
+.lb-row:nth-child(odd){background:rgba(255,255,255,.04)}
+.lb-row.lb-mine{background:rgba(96,208,240,.08);border:1px solid rgba(96,208,240,.25)}
+.lb-row.lb-top3{font-weight:700}
+.lb-rank{font-size:.78rem;color:var(--muted);text-align:center}
+.lb-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-pts{font-weight:800;color:var(--accent);text-align:right}
+.lb-record{color:var(--muted);font-size:.78rem;text-align:right}
+.lb-date{color:var(--muted);font-size:.72rem;text-align:right}
+.lb-header{display:grid;grid-template-columns:36px 1fr 56px 80px 80px;gap:8px;padding:6px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro" class="screen active">
+  <div class="intro-logo">TEST MATCH 12-0</div>
+  <div class="intro-sub">Spin your all-time XI. Conquer a 12-match season.</div>
+  <div class="strategy-grid" id="strategy-grid">
+    <div class="strat-card selected" data-strat="balanced">
+      <div class="strat-name">Balanced XI</div>
+      <div class="strat-slots">2 Openers · 3 Middle · WK · AR<br>2 Seamers · 2 Spinners</div>
+    </div>
+    <div class="strat-card" data-strat="pace">
+      <div class="strat-name">Pace Attack</div>
+      <div class="strat-slots">2 Openers · 3 Middle · WK · AR<br>3 Seamers · 1 Spinner</div>
+    </div>
+    <div class="strat-card" data-strat="spin">
+      <div class="strat-name">Spin Assault</div>
+      <div class="strat-slots">2 Openers · 2 Middle · WK · AR<br>2 Seamers · 3 Spinners</div>
+    </div>
+    <div class="strat-card" data-strat="allround">
+      <div class="strat-name">All-Round Power</div>
+      <div class="strat-slots">2 Openers · 3 Middle · WK · 2 ARs<br>2 Seamers · 1 Spinner</div>
+    </div>
+  </div>
+  <div class="rules-box">
+    <h3>How to play</h3>
+    <ul>
+      <li>Spin to draw a random test great from history</li>
+      <li>Accept or skip — only <strong>5 skips</strong> allowed</li>
+      <li>Must include minimum 4 bowlers + 1 all-rounder</li>
+      <li>Multiple spinners allowed (Spin Assault gets 3)</li>
+      <li>Remove a placed player at the cost of 1 skip</li>
+      <li>Simulate your XI against a full 12-match season</li>
+      <li>Varied opponents: 4 weak · 4 medium · 4 elite</li>
+    </ul>
+  </div>
+  <button class="btn-primary" onclick="startGame()">Start Spinning</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div id="spin-panel">
+    <div class="slot-label" id="spin-label">Spin for a player</div>
+    <div class="slot-wrap">
+      <div class="slot-track" id="slot-track"></div>
+    </div>
+
+    <div class="reveal-card" id="reveal-card">
+      <div class="reveal-header">
+        <div class="reveal-badge" id="rv-badge"></div>
+        <div>
+          <div class="reveal-name" id="rv-name"></div>
+          <div class="reveal-meta" id="rv-meta"></div>
+        </div>
+      </div>
+      <div class="reveal-stats" id="rv-stats"></div>
+      <div class="reveal-note" id="rv-note"></div>
+      <div class="action-row">
+        <button class="btn-accept" id="btn-accept" onclick="acceptPlayer()">Add to XI</button>
+        <button class="btn-skip" id="btn-skip" onclick="rejectPlayer()">Skip</button>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div style="font-size:.72rem;color:#90a4c0">Skips used</div>
+      <div class="skip-dots" id="skip-dots"></div>
+    </div>
+    <div class="meta-row">
+      <div style="font-size:.72rem;color:#90a4c0" id="spin-count-label">Spins: 0</div>
+      <div style="font-size:.72rem;color:#5a7090" id="slots-remaining">11 slots to fill</div>
+    </div>
+
+    <button class="btn-spin" id="btn-spin" onclick="doSpin()">SPIN</button>
+  </div>
+
+  <div id="team-panel">
+    <div class="panel-title">Your XI</div>
+    <div class="lineup" id="lineup"></div>
+    <div class="rating-bars" id="rating-bars">
+      <div class="bar-row">
+        <div class="bar-label">Batting</div>
+        <div class="bar-track"><div class="bar-fill" id="bar-bat" style="background:#f0c040"></div></div>
+        <div class="bar-val" id="val-bat">–</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Bowling</div>
+        <div class="bar-track"><div class="bar-fill" id="bar-bowl" style="background:#60d0f0"></div></div>
+        <div class="bar-val" id="val-bowl">–</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Balance</div>
+        <div class="bar-track"><div class="bar-fill" id="bar-bal" style="background:#a0d060"></div></div>
+        <div class="bar-val" id="val-bal">–</div>
+      </div>
+    </div>
+    <div class="projection" id="projection"></div>
+    <button class="btn-simulate" id="btn-simulate" onclick="runSimulation()" disabled>Simulate Season →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen">
+  <div class="result-inner">
+    <div class="result-score">
+      <div class="score-big" id="r-pts">–</div>
+      <div class="score-label">points from 12 tests (max 36)</div>
+    </div>
+    <div class="wdl-cards">
+      <div class="wdl-card wins"><div class="wdl-num" id="r-w">–</div><div class="wdl-lbl">Wins</div></div>
+      <div class="wdl-card draws"><div class="wdl-num" id="r-d">–</div><div class="wdl-lbl">Draws</div></div>
+      <div class="wdl-card losses"><div class="wdl-num" id="r-l">–</div><div class="wdl-lbl">Losses</div></div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <div class="hist-section">
+      <div class="hist-title">Historical context</div>
+      <div id="hist-bars"></div>
+    </div>
+    <div class="squad-section">
+      <div class="hist-title">Your XI</div>
+      <div id="squad-list"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-secondary" onclick="resetGame()">Spin Again</button>
+      <button class="btn-secondary" onclick="shareResult()">Share Result</button>
+      <button class="btn-secondary" id="lb-submit-btn" onclick="openSubmitModal()">🏅 Add to Leaderboard</button>
+      <button class="btn-secondary" onclick="openLeaderboardModal()">📋 Leaderboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUBMIT TO LEADERBOARD MODAL ── -->
+<div id="lb-submit-overlay" onclick="closeLbSubmit(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:28px;position:relative">
+    <button onclick="closeLbSubmitBtn()" style="position:absolute;top:14px;right:14px;background:var(--border);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem">✕</button>
+    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:6px">🏅 Add to Leaderboard</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">Enter your name to save your score. No anonymous entries.</p>
+    <input id="lb-name-input" type="text" maxlength="24" placeholder="Your name (max 24 chars)"
+      style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:#fff;font-size:.95rem;box-sizing:border-box;margin-bottom:12px"
+      onkeydown="if(event.key==='Enter')submitScore()">
+    <div id="lb-submit-msg" style="font-size:.82rem;color:var(--red);min-height:18px;margin-bottom:10px"></div>
+    <button class="btn-simulate" onclick="submitScore()" style="width:100%">Submit Score</button>
+  </div>
+</div>
+
+<!-- ── VIEW LEADERBOARD MODAL ── -->
+<div id="lb-view-overlay" onclick="closeLbView(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:660px;width:100%;padding:28px;position:relative;max-height:88vh;overflow-y:auto">
+    <button onclick="closeLbViewBtn()" style="position:absolute;top:14px;right:14px;background:var(--border);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem">✕</button>
+    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:4px">📋 Leaderboard</h2>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:20px">Top 100 scores of all time</p>
+    <div id="lb-table-body">
+      <div style="text-align:center;color:var(--muted);padding:32px">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// PLAYER DATABASE
+// ═══════════════════════════════════════════════
+const NC = {
+  AUS:'#c8a200',ENG:'#003a6b',IND:'#1565c0',WI:'#7b1fa2',
+  PAK:'#1b5e20',SA:'#006341',SL:'#0d3b6e',NZ:'#2d2d2d',
+  ZIM:'#2e7d32',BAN:'#006a4e'
+}
+
+// pos: OPEN | MID | WK | AR | SPIN | SEAM
+// stats shape per pos:
+//   OPEN/MID: { avg, centuries, runs }
+//   WK:       { dismissals, avg, runs }
+//   AR:        { batAvg, wickets, bowlAvg }
+//   SPIN/SEAM: { wickets, bowlAvg, strikeRate }
+
+// Stats sourced from Wikipedia Test match career statistics rows only.
+// OPEN/MID: { avg, centuries, fifties, runs }
+// WK:       { dismissals, avg, runs, centuries, fifties }
+// AR:        { batAvg, batRuns, centuries, fifties, wickets, bowlAvg, strikeRate, fiveWickets }
+// SPIN/SEAM: { wickets, bowlAvg, strikeRate, fiveWickets }
+const PLAYERS = [
+// ── OPENERS ──────────────────────────────────
+{id:'gav',   name:'Sunil Gavaskar',      nation:'IND',era:'1971–87',pos:'OPEN',color:NC.IND,stats:{avg:51.12,centuries:34,fifties:45,runs:10122}},
+{id:'hay_m', name:'Matthew Hayden',      nation:'AUS',era:'1994–09',pos:'OPEN',color:NC.AUS,stats:{avg:50.73,centuries:30,fifties:29,runs:8625}},
+{id:'cook',  name:'Alastair Cook',       nation:'ENG',era:'2006–18',pos:'OPEN',color:NC.ENG,stats:{avg:45.35,centuries:33,fifties:57,runs:12472}},
+{id:'warn_d',name:'David Warner',        nation:'AUS',era:'2011–23',pos:'OPEN',color:NC.AUS,stats:{avg:44.59,centuries:26,fifties:37,runs:8786}},
+{id:'hut',   name:'Len Hutton',          nation:'ENG',era:'1937–55',pos:'OPEN',color:NC.ENG,stats:{avg:56.67,centuries:19,fifties:33,runs:6971}},
+{id:'hob',   name:'Jack Hobbs',          nation:'ENG',era:'1908–30',pos:'OPEN',color:NC.ENG,stats:{avg:56.94,centuries:15,fifties:28,runs:5410}},
+{id:'boyc',  name:'Geoff Boycott',       nation:'ENG',era:'1964–82',pos:'OPEN',color:NC.ENG,stats:{avg:47.72,centuries:22,fifties:42,runs:8114}},
+{id:'goo',   name:'Graham Gooch',        nation:'ENG',era:'1975–95',pos:'OPEN',color:NC.ENG,stats:{avg:42.58,centuries:20,fifties:46,runs:8900}},
+{id:'smit_g',name:'Graeme Smith',        nation:'SA', era:'2002–14',pos:'OPEN',color:NC.SA, stats:{avg:48.25,centuries:27,fifties:38,runs:9265}},
+{id:'sehw',  name:'Virender Sehwag',     nation:'IND',era:'2001–13',pos:'OPEN',color:NC.IND,stats:{avg:49.34,centuries:23,fifties:32,runs:8586}},
+{id:'green', name:'Gordon Greenidge',    nation:'WI', era:'1974–91',pos:'OPEN',color:NC.WI, stats:{avg:44.72,centuries:19,fifties:34,runs:7558}},
+{id:'hayn',  name:'Desmond Haynes',      nation:'WI', era:'1978–94',pos:'OPEN',color:NC.WI, stats:{avg:42.29,centuries:18,fifties:39,runs:7487}},
+{id:'gayl',  name:'Chris Gayle',         nation:'WI', era:'2000–14',pos:'OPEN',color:NC.WI, stats:{avg:42.18,centuries:15,fifties:37,runs:7214}},
+{id:'lang',  name:'Justin Langer',       nation:'AUS',era:'1993–07',pos:'OPEN',color:NC.AUS,stats:{avg:45.27,centuries:23,fifties:30,runs:7696}},
+{id:'tayl_m',name:'Mark Taylor',         nation:'AUS',era:'1989–99',pos:'OPEN',color:NC.AUS,stats:{avg:43.49,centuries:19,fifties:40,runs:7525}},
+{id:'slat',  name:'Michael Slater',      nation:'AUS',era:'1993–01',pos:'OPEN',color:NC.AUS,stats:{avg:42.83,centuries:14,fifties:21,runs:5312}},
+{id:'lawry', name:'Bill Lawry',          nation:'AUS',era:'1961–71',pos:'OPEN',color:NC.AUS,stats:{avg:47.15,centuries:13,fifties:27,runs:5234}},
+{id:'suth',  name:'Herbert Sutcliffe',   nation:'ENG',era:'1924–35',pos:'OPEN',color:NC.ENG,stats:{avg:60.73,centuries:16,fifties:23,runs:4555}},
+{id:'anwa',  name:'Saeed Anwar',         nation:'PAK',era:'1990–01',pos:'OPEN',color:NC.PAK,stats:{avg:45.52,centuries:11,fifties:25,runs:4052}},
+{id:'atap',  name:'Marvan Atapattu',     nation:'SL', era:'1990–07',pos:'OPEN',color:NC.SL, stats:{avg:39.02,centuries:16,fifties:17,runs:5502}},
+{id:'dils',  name:'Tillakaratne Dilshan',nation:'SL', era:'1999–16',pos:'OPEN',color:NC.SL, stats:{avg:40.98,centuries:16,fifties:23,runs:5492}},
+{id:'tami',  name:'Tamim Iqbal',         nation:'BAN',era:'2007–22',pos:'OPEN',color:NC.BAN,stats:{avg:38.89,centuries:10,fifties:31,runs:5134}},
+{id:'tresc', name:'Marcus Trescothick',  nation:'ENG',era:'2000–06',pos:'OPEN',color:NC.ENG,stats:{avg:43.79,centuries:14,fifties:29,runs:5825}},
+{id:'hani',  name:'Hanif Mohammad',      nation:'PAK',era:'1952–69',pos:'OPEN',color:NC.PAK,stats:{avg:43.98,centuries:12,fifties:15,runs:3915}},
+{id:'gibb',  name:'Herschelle Gibbs',    nation:'SA', era:'1996–08',pos:'OPEN',color:NC.SA, stats:{avg:41.95,centuries:14,fifties:26,runs:6167}},
+{id:'hamm_w',name:'Wally Hammond',       nation:'ENG',era:'1927–47',pos:'OPEN',color:NC.ENG,stats:{avg:58.45,centuries:22,fifties:24,runs:7249}},
+{id:'kani',  name:'Rohan Kanhai',        nation:'WI', era:'1957–74',pos:'OPEN',color:NC.WI, stats:{avg:47.53,centuries:15,fifties:28,runs:6227}},
+{id:'jaya_s',name:'Sanath Jayasuriya',   nation:'SL', era:'1991–07',pos:'OPEN',color:NC.SL, stats:{avg:40.07,centuries:14,fifties:31,runs:6973}},
+{id:'merc',  name:'Vijay Merchant',      nation:'IND',era:'1933–52',pos:'OPEN',color:NC.IND,stats:{avg:47.72,centuries:3, fifties:3, runs:859}},
+
+// ── MIDDLE ORDER ─────────────────────────────
+{id:'brad',  name:'Don Bradman',         nation:'AUS',era:'1928–48',pos:'MID',color:NC.AUS,stats:{avg:99.94,centuries:29,fifties:13,runs:6996}},
+{id:'tend',  name:'Sachin Tendulkar',    nation:'IND',era:'1989–13',pos:'MID',color:NC.IND,stats:{avg:53.78,centuries:51,fifties:68,runs:15921}},
+{id:'lara',  name:'Brian Lara',          nation:'WI', era:'1990–06',pos:'MID',color:NC.WI, stats:{avg:52.88,centuries:34,fifties:48,runs:11953}},
+{id:'pont',  name:'Ricky Ponting',       nation:'AUS',era:'1995–12',pos:'MID',color:NC.AUS,stats:{avg:51.85,centuries:41,fifties:62,runs:13378}},
+{id:'sang',  name:'Kumar Sangakkara',    nation:'SL', era:'2000–15',pos:'MID',color:NC.SL, stats:{avg:57.40,centuries:38,fifties:52,runs:12400}},
+{id:'jaya_m',name:'Mahela Jayawardene',  nation:'SL', era:'1997–14',pos:'MID',color:NC.SL, stats:{avg:49.84,centuries:34,fifties:50,runs:11814}},
+{id:'drav',  name:'Rahul Dravid',        nation:'IND',era:'1996–12',pos:'MID',color:NC.IND,stats:{avg:52.31,centuries:36,fifties:63,runs:13288}},
+{id:'laxm',  name:'VVS Laxman',          nation:'IND',era:'1996–12',pos:'MID',color:NC.IND,stats:{avg:45.97,centuries:17,fifties:56,runs:8781}},
+{id:'kohl',  name:'Virat Kohli',         nation:'IND',era:'2011–24',pos:'MID',color:NC.IND,stats:{avg:46.85,centuries:30,fifties:31,runs:9230}},
+{id:'root',  name:'Joe Root',            nation:'ENG',era:'2012–24',pos:'MID',color:NC.ENG,stats:{avg:50.73,centuries:41,fifties:66,runs:13952}},
+{id:'will',  name:'Kane Williamson',     nation:'NZ', era:'2010–23',pos:'MID',color:NC.NZ, stats:{avg:54.06,centuries:33,fifties:38,runs:9515}},
+{id:'swaug', name:'Steve Waugh',         nation:'AUS',era:'1985–04',pos:'MID',color:NC.AUS,stats:{avg:51.06,centuries:32,fifties:50,runs:10927}},
+{id:'mian',  name:'Javed Miandad',       nation:'PAK',era:'1976–93',pos:'MID',color:NC.PAK,stats:{avg:52.57,centuries:23,fifties:43,runs:8832}},
+{id:'youn',  name:'Younis Khan',         nation:'PAK',era:'2000–17',pos:'MID',color:NC.PAK,stats:{avg:52.05,centuries:34,fifties:33,runs:10099}},
+{id:'yous',  name:'Mohammad Yousuf',     nation:'PAK',era:'1998–10',pos:'MID',color:NC.PAK,stats:{avg:52.29,centuries:24,fifties:33,runs:7530}},
+{id:'inza',  name:'Inzamam-ul-Haq',      nation:'PAK',era:'1992–07',pos:'MID',color:NC.PAK,stats:{avg:49.60,centuries:25,fifties:46,runs:8830}},
+{id:'rich_v',name:'Viv Richards',        nation:'WI', era:'1974–91',pos:'MID',color:NC.WI, stats:{avg:50.23,centuries:24,fifties:45,runs:8540}},
+{id:'lloy',  name:'Clive Lloyd',         nation:'WI', era:'1966–85',pos:'MID',color:NC.WI, stats:{avg:46.67,centuries:19,fifties:39,runs:7515}},
+{id:'head_g',name:'George Headley',      nation:'WI', era:'1930–54',pos:'MID',color:NC.WI, stats:{avg:60.83,centuries:10,fifties:5, runs:2190}},
+{id:'chap_g',name:'Greg Chappell',       nation:'AUS',era:'1970–84',pos:'MID',color:NC.AUS,stats:{avg:53.86,centuries:24,fifties:31,runs:7110}},
+{id:'crow',  name:'Martin Crowe',        nation:'NZ', era:'1982–95',pos:'MID',color:NC.NZ, stats:{avg:45.36,centuries:17,fifties:18,runs:5444}},
+{id:'tayl_r',name:'Ross Taylor',         nation:'NZ', era:'2006–22',pos:'MID',color:NC.NZ, stats:{avg:44.66,centuries:19,fifties:35,runs:7683}},
+{id:'piet',  name:'Kevin Pietersen',     nation:'ENG',era:'2005–14',pos:'MID',color:NC.ENG,stats:{avg:47.28,centuries:23,fifties:35,runs:8181}},
+{id:'gowe',  name:'David Gower',         nation:'ENG',era:'1978–92',pos:'MID',color:NC.ENG,stats:{avg:44.25,centuries:18,fifties:39,runs:8231}},
+{id:'barr',  name:'Ken Barrington',      nation:'ENG',era:'1955–68',pos:'MID',color:NC.ENG,stats:{avg:58.67,centuries:20,fifties:35,runs:6806}},
+{id:'amla',  name:'Hashim Amla',         nation:'SA', era:'2004–19',pos:'MID',color:NC.SA, stats:{avg:46.64,centuries:28,fifties:41,runs:9282}},
+{id:'devill',name:'AB de Villiers',      nation:'SA', era:'2004–18',pos:'MID',color:NC.SA, stats:{avg:50.66,centuries:22,fifties:46,runs:8765}},
+{id:'puja',  name:'Cheteshwar Pujara',   nation:'IND',era:'2010–23',pos:'MID',color:NC.IND,stats:{avg:43.60,centuries:19,fifties:35,runs:7195}},
+{id:'azha',  name:'Mohammad Azharuddin', nation:'IND',era:'1984–00',pos:'MID',color:NC.IND,stats:{avg:45.03,centuries:22,fifties:21,runs:6215}},
+{id:'veng',  name:'Dilip Vengsarkar',    nation:'IND',era:'1976–92',pos:'MID',color:NC.IND,stats:{avg:42.13,centuries:17,fifties:35,runs:6868}},
+{id:'fupla', name:'Faf du Plessis',      nation:'SA', era:'2012–21',pos:'MID',color:NC.SA, stats:{avg:40.02,centuries:10,fifties:21,runs:4163}},
+{id:'chan_i',name:'Ian Chappell',        nation:'AUS',era:'1964–80',pos:'MID',color:NC.AUS,stats:{avg:42.42,centuries:14,fifties:26,runs:5345}},
+{id:'wall',  name:'Clyde Walcott',       nation:'WI', era:'1948–60',pos:'MID',color:NC.WI, stats:{avg:56.68,centuries:15,fifties:14,runs:3798}},
+{id:'week',  name:'Everton Weekes',      nation:'WI', era:'1948–58',pos:'MID',color:NC.WI, stats:{avg:58.61,centuries:15,fifties:19,runs:4455}},
+{id:'worre', name:'Frank Worrell',       nation:'WI', era:'1948–63',pos:'MID',color:NC.WI, stats:{avg:49.48,centuries:9, fifties:22,runs:3860}},
+{id:'smit_s',name:'Steve Smith',         nation:'AUS',era:'2010–24',pos:'MID',color:NC.AUS,stats:{avg:56.05,centuries:37,fifties:44,runs:10763}},
+
+// ── WICKETKEEPERS ─────────────────────────────
+{id:'gilc',  name:'Adam Gilchrist',   nation:'AUS',era:'1999–08',pos:'WK',color:NC.AUS,stats:{dismissals:416,avg:47.60,runs:5570,centuries:17,fifties:26}},
+{id:'knot',  name:'Alan Knott',       nation:'ENG',era:'1967–81',pos:'WK',color:NC.ENG,stats:{dismissals:269,avg:32.75,runs:4389,centuries:5, fifties:30}},
+{id:'mars',  name:'Rodney Marsh',     nation:'AUS',era:'1970–84',pos:'WK',color:NC.AUS,stats:{dismissals:355,avg:26.51,runs:3633,centuries:3, fifties:16}},
+{id:'dujo',  name:'Jeff Dujon',       nation:'WI', era:'1981–91',pos:'WK',color:NC.WI, stats:{dismissals:272,avg:31.94,runs:3322,centuries:5, fifties:16}},
+{id:'heal',  name:'Ian Healy',        nation:'AUS',era:'1988–99',pos:'WK',color:NC.AUS,stats:{dismissals:395,avg:27.39,runs:4356,centuries:4, fifties:22}},
+{id:'bouc',  name:'Mark Boucher',     nation:'SA', era:'1997–12',pos:'WK',color:NC.SA, stats:{dismissals:555,avg:30.30,runs:5515,centuries:5, fifties:35}},
+{id:'dhon',  name:'MS Dhoni',         nation:'IND',era:'2005–14',pos:'WK',color:NC.IND,stats:{dismissals:294,avg:38.09,runs:4876,centuries:6, fifties:33}},
+{id:'flow',  name:'Andy Flower',      nation:'ZIM',era:'1992–02',pos:'WK',color:NC.ZIM,stats:{dismissals:160,avg:51.54,runs:4794,centuries:12,fifties:27}},
+{id:'evan',  name:'Godfrey Evans',    nation:'ENG',era:'1946–59',pos:'WK',color:NC.ENG,stats:{dismissals:219,avg:20.49,runs:2439,centuries:2, fifties:8}},
+{id:'kirm',  name:'Syed Kirmani',     nation:'IND',era:'1975–86',pos:'WK',color:NC.IND,stats:{dismissals:198,avg:27.04,runs:2759,centuries:2, fifties:12}},
+{id:'murr_d',name:'Deryck Murray',    nation:'WI', era:'1963–80',pos:'WK',color:NC.WI, stats:{dismissals:189,avg:22.90,runs:1993,centuries:0, fifties:11}},
+{id:'watl',  name:'BJ Watling',       nation:'NZ', era:'2009–21',pos:'WK',color:NC.NZ, stats:{dismissals:275,avg:37.52,runs:3790,centuries:8, fifties:19}},
+{id:'pant',  name:'Rishabh Pant',     nation:'IND',era:'2018–24',pos:'WK',color:NC.IND,stats:{dismissals:173,avg:43.38,runs:3557,centuries:8, fifties:19}},
+{id:'butt',  name:'Jos Buttler',      nation:'ENG',era:'2014–24',pos:'WK',color:NC.ENG,stats:{dismissals:154,avg:31.94,runs:2907,centuries:2, fifties:18}},
+{id:'dekok', name:'Quinton de Kock',  nation:'SA', era:'2014–22',pos:'WK',color:NC.SA, stats:{dismissals:232,avg:38.82,runs:3300,centuries:6, fifties:22}},
+{id:'hadd',  name:'Brad Haddin',      nation:'AUS',era:'2008–15',pos:'WK',color:NC.AUS,stats:{dismissals:270,avg:32.99,runs:3266,centuries:4, fifties:18}},
+{id:'prio',  name:'Matt Prior',       nation:'ENG',era:'2007–14',pos:'WK',color:NC.ENG,stats:{dismissals:256,avg:40.18,runs:4099,centuries:7, fifties:27}},
+{id:'grout', name:'Wally Grout',      nation:'AUS',era:'1957–66',pos:'WK',color:NC.AUS,stats:{dismissals:187,avg:15.08,runs:890, centuries:0, fifties:3}},
+{id:'engi',  name:'Farokh Engineer',  nation:'IND',era:'1961–75',pos:'WK',color:NC.IND,stats:{dismissals:82, avg:31.08,runs:2611,centuries:2, fifties:16}},
+{id:'sang_wk',name:'Sangakkara (WK)',nation:'SL', era:'2000–06',pos:'WK',color:NC.SL, stats:{dismissals:202,avg:57.40,runs:12400,centuries:38,fifties:52}},
+
+// ── ALL-ROUNDERS ──────────────────────────────
+{id:'sobe', name:'Garfield Sobers',  nation:'WI', era:'1954–74',pos:'AR',color:NC.WI, stats:{batAvg:57.78,batRuns:8032,centuries:26,fifties:30,wickets:235,bowlAvg:34.03,strikeRate:91.9,fiveWickets:6}},
+{id:'kall', name:'Jacques Kallis',   nation:'SA', era:'1995–13',pos:'AR',color:NC.SA, stats:{batAvg:55.37,batRuns:13289,centuries:45,fifties:58,wickets:292,bowlAvg:32.65,strikeRate:69.3,fiveWickets:5}},
+{id:'both', name:'Ian Botham',       nation:'ENG',era:'1977–92',pos:'AR',color:NC.ENG,stats:{batAvg:33.54,batRuns:5200,centuries:14,fifties:22,wickets:383,bowlAvg:28.40,strikeRate:57.0,fiveWickets:27}},
+{id:'kapi', name:'Kapil Dev',        nation:'IND',era:'1978–94',pos:'AR',color:NC.IND,stats:{batAvg:31.05,batRuns:5248,centuries:8, fifties:27,wickets:434,bowlAvg:29.64,strikeRate:63.9,fiveWickets:23}},
+{id:'imra', name:'Imran Khan',       nation:'PAK',era:'1971–92',pos:'AR',color:NC.PAK,stats:{batAvg:37.69,batRuns:3807,centuries:6, fifties:18,wickets:362,bowlAvg:22.81,strikeRate:53.8,fiveWickets:23}},
+{id:'hadr', name:'Richard Hadlee',   nation:'NZ', era:'1973–90',pos:'AR',color:NC.NZ, stats:{batAvg:27.16,batRuns:3124,centuries:2, fifties:15,wickets:431,bowlAvg:22.29,strikeRate:50.9,fiveWickets:36}},
+{id:'poll', name:'Shaun Pollock',    nation:'SA', era:'1995–08',pos:'AR',color:NC.SA, stats:{batAvg:32.31,batRuns:3781,centuries:2, fifties:16,wickets:421,bowlAvg:23.11,strikeRate:57.8,fiveWickets:16}},
+{id:'flint',name:'Andrew Flintoff',  nation:'ENG',era:'1998–09',pos:'AR',color:NC.ENG,stats:{batAvg:31.77,batRuns:3845,centuries:5, fifties:26,wickets:226,bowlAvg:32.78,strikeRate:66.2,fiveWickets:3}},
+{id:'mill', name:'Keith Miller',     nation:'AUS',era:'1945–56',pos:'AR',color:NC.AUS,stats:{batAvg:36.97,batRuns:2958,centuries:7, fifties:13,wickets:170,bowlAvg:22.97,strikeRate:61.5,fiveWickets:7}},
+{id:'stok', name:'Ben Stokes',       nation:'ENG',era:'2013–24',pos:'AR',color:NC.ENG,stats:{batAvg:34.58,batRuns:7228,centuries:14,fifties:37,wickets:246,bowlAvg:31.25,strikeRate:56.1,fiveWickets:6}},
+{id:'jade', name:'Ravindra Jadeja',  nation:'IND',era:'2012–24',pos:'AR',color:NC.IND,stats:{batAvg:38.27,batRuns:4095,centuries:6, fifties:27,wickets:348,bowlAvg:25.11,strikeRate:58.2,fiveWickets:15}},
+{id:'vett', name:'Daniel Vettori',   nation:'NZ', era:'1997–15',pos:'AR',color:NC.NZ, stats:{batAvg:30.00,batRuns:4531,centuries:6, fifties:23,wickets:362,bowlAvg:34.36,strikeRate:79.6,fiveWickets:20}},
+{id:'cair', name:'Chris Cairns',     nation:'NZ', era:'1989–04',pos:'AR',color:NC.NZ, stats:{batAvg:33.53,batRuns:3320,centuries:5, fifties:22,wickets:218,bowlAvg:29.40,strikeRate:53.7,fiveWickets:13}},
+{id:'grei', name:'Tony Greig',       nation:'ENG',era:'1972–77',pos:'AR',color:NC.ENG,stats:{batAvg:40.43,batRuns:3599,centuries:8, fifties:20,wickets:141,bowlAvg:32.20,strikeRate:69.5,fiveWickets:6}},
+{id:'mank', name:'Vinoo Mankad',     nation:'IND',era:'1946–59',pos:'AR',color:NC.IND,stats:{batAvg:31.47,batRuns:2109,centuries:5, fifties:6, wickets:162,bowlAvg:32.32,strikeRate:90.7,fiveWickets:8}},
+{id:'shak', name:'Shakib Al Hasan',  nation:'BAN',era:'2007–24',pos:'AR',color:NC.BAN,stats:{batAvg:37.77,batRuns:4609,centuries:5, fifties:31,wickets:246,bowlAvg:31.72,strikeRate:67.0,fiveWickets:19}},
+{id:'davi_a',name:'Alan Davidson',   nation:'AUS',era:'1953–63',pos:'AR',color:NC.AUS,stats:{batAvg:24.59,batRuns:1328,centuries:0, fifties:5, wickets:186,bowlAvg:20.53,strikeRate:62.3,fiveWickets:14}},
+
+// ── SPINNERS ─────────────────────────────────
+{id:'warn',  name:'Shane Warne',            nation:'AUS',era:'1992–07',pos:'SPIN',color:NC.AUS,stats:{wickets:708,bowlAvg:25.41,strikeRate:57.4, fiveWickets:37}},
+{id:'mura',  name:'Muttiah Muralitharan',   nation:'SL', era:'1992–10',pos:'SPIN',color:NC.SL, stats:{wickets:800,bowlAvg:22.72,strikeRate:55.0, fiveWickets:67}},
+{id:'kumb',  name:'Anil Kumble',            nation:'IND',era:'1990–08',pos:'SPIN',color:NC.IND,stats:{wickets:619,bowlAvg:29.65,strikeRate:65.98,fiveWickets:35}},
+{id:'ashw',  name:'Ravichandran Ashwin',    nation:'IND',era:'2011–24',pos:'SPIN',color:NC.IND,stats:{wickets:537,bowlAvg:23.95,strikeRate:50.56,fiveWickets:37}},
+{id:'lyon',  name:'Nathan Lyon',            nation:'AUS',era:'2011–24',pos:'SPIN',color:NC.AUS,stats:{wickets:567,bowlAvg:30.15,strikeRate:61.4, fiveWickets:24}},
+{id:'harb',  name:'Harbhajan Singh',        nation:'IND',era:'1998–15',pos:'SPIN',color:NC.IND,stats:{wickets:417,bowlAvg:32.46,strikeRate:68.62,fiveWickets:25}},
+{id:'swann', name:'Graeme Swann',           nation:'ENG',era:'2008–13',pos:'SPIN',color:NC.ENG,stats:{wickets:255,bowlAvg:29.96,strikeRate:60.14,fiveWickets:17}},
+{id:'unde',  name:'Derek Underwood',        nation:'ENG',era:'1966–82',pos:'SPIN',color:NC.ENG,stats:{wickets:297,bowlAvg:25.83,strikeRate:73.6, fiveWickets:17}},
+{id:'lake',  name:'Jim Laker',              nation:'ENG',era:'1948–59',pos:'SPIN',color:NC.ENG,stats:{wickets:193,bowlAvg:21.24,strikeRate:62.3, fiveWickets:9}},
+{id:'gibs',  name:'Lance Gibbs',            nation:'WI', era:'1958–76',pos:'SPIN',color:NC.WI, stats:{wickets:309,bowlAvg:29.09,strikeRate:87.71,fiveWickets:18}},
+{id:'chan_b',name:'Bhagwath Chandrasekhar', nation:'IND',era:'1964–79',pos:'SPIN',color:NC.IND,stats:{wickets:242,bowlAvg:29.74,strikeRate:65.96,fiveWickets:16}},
+{id:'bedi',  name:'Bishan Bedi',            nation:'IND',era:'1966–79',pos:'SPIN',color:NC.IND,stats:{wickets:266,bowlAvg:28.71,strikeRate:80.36,fiveWickets:14}},
+{id:'pras',  name:'EAS Prasanna',           nation:'IND',era:'1962–78',pos:'SPIN',color:NC.IND,stats:{wickets:189,bowlAvg:30.38,strikeRate:75.9, fiveWickets:10}},
+{id:'qadr',  name:'Abdul Qadir',            nation:'PAK',era:'1977–90',pos:'SPIN',color:NC.PAK,stats:{wickets:236,bowlAvg:32.81,strikeRate:71.44,fiveWickets:15}},
+{id:'saql',  name:'Saqlain Mushtaq',        nation:'PAK',era:'1995–04',pos:'SPIN',color:NC.PAK,stats:{wickets:208,bowlAvg:29.83,strikeRate:67.6, fiveWickets:13}},
+{id:'yasir', name:'Yasir Shah',             nation:'PAK',era:'2014–21',pos:'SPIN',color:NC.PAK,stats:{wickets:244,bowlAvg:31.38,strikeRate:57.39,fiveWickets:16}},
+{id:'bena',  name:'Richie Benaud',          nation:'AUS',era:'1952–64',pos:'SPIN',color:NC.AUS,stats:{wickets:248,bowlAvg:27.03,strikeRate:77.07,fiveWickets:16}},
+{id:'grim',  name:'Clarrie Grimmett',       nation:'AUS',era:'1925–36',pos:'SPIN',color:NC.AUS,stats:{wickets:216,bowlAvg:24.21,strikeRate:67.18,fiveWickets:21}},
+{id:'orei',  name:"Bill O'Reilly",          nation:'AUS',era:'1932–46',pos:'SPIN',color:NC.AUS,stats:{wickets:144,bowlAvg:22.59,strikeRate:69.6, fiveWickets:11}},
+{id:'rama',  name:'Sonny Ramadhin',         nation:'WI', era:'1950–61',pos:'SPIN',color:NC.WI, stats:{wickets:158,bowlAvg:28.98,strikeRate:88.2, fiveWickets:10}},
+{id:'vale',  name:'Alf Valentine',          nation:'WI', era:'1950–62',pos:'SPIN',color:NC.WI, stats:{wickets:139,bowlAvg:30.32,strikeRate:93.2, fiveWickets:8}},
+{id:'tayf',  name:'Hugh Tayfield',          nation:'SA', era:'1949–60',pos:'SPIN',color:NC.SA, stats:{wickets:170,bowlAvg:25.91,strikeRate:79.81,fiveWickets:14}},
+{id:'pane',  name:'Monty Panesar',          nation:'ENG',era:'2006–13',pos:'SPIN',color:NC.ENG,stats:{wickets:167,bowlAvg:34.71,strikeRate:74.76,fiveWickets:12}},
+{id:'gupt',  name:'Subhash Gupte',          nation:'IND',era:'1951–61',pos:'SPIN',color:NC.IND,stats:{wickets:149,bowlAvg:29.55,strikeRate:75.76,fiveWickets:12}},
+{id:'dani',  name:'Danish Kaneria',         nation:'PAK',era:'2000–10',pos:'SPIN',color:NC.PAK,stats:{wickets:261,bowlAvg:34.79,strikeRate:67.8, fiveWickets:15}},
+{id:'edmo',  name:'Phil Edmonds',           nation:'ENG',era:'1975–87',pos:'SPIN',color:NC.ENG,stats:{wickets:125,bowlAvg:34.18,strikeRate:96.22,fiveWickets:2}},
+{id:'mall',  name:'Ashley Mallett',         nation:'AUS',era:'1968–80',pos:'SPIN',color:NC.AUS,stats:{wickets:132,bowlAvg:29.84,strikeRate:75.68,fiveWickets:6}},
+{id:'imra_t',name:'Imran Tahir',            nation:'SA', era:'2011–19',pos:'SPIN',color:NC.SA, stats:{wickets:57, bowlAvg:40.24,strikeRate:68.86,fiveWickets:2}},
+
+// ── SEAMERS ───────────────────────────────────
+// Stats for this group from authoritative career Test records
+{id:'mcgr',  name:'Glenn McGrath',    nation:'AUS',era:'1993–07',pos:'SEAM',color:NC.AUS,stats:{wickets:563,bowlAvg:21.64,strikeRate:51.9,fiveWickets:29}},
+{id:'wasi',  name:'Wasim Akram',      nation:'PAK',era:'1984–02',pos:'SEAM',color:NC.PAK,stats:{wickets:414,bowlAvg:23.62,strikeRate:54.6,fiveWickets:25}},
+{id:'waqa',  name:'Waqar Younis',     nation:'PAK',era:'1989–03',pos:'SEAM',color:NC.PAK,stats:{wickets:373,bowlAvg:23.56,strikeRate:43.5,fiveWickets:22}},
+{id:'mars_m',name:'Malcolm Marshall', nation:'WI', era:'1978–91',pos:'SEAM',color:NC.WI, stats:{wickets:376,bowlAvg:20.94,strikeRate:46.7,fiveWickets:22}},
+{id:'garn',  name:'Joel Garner',      nation:'WI', era:'1976–87',pos:'SEAM',color:NC.WI, stats:{wickets:259,bowlAvg:20.97,strikeRate:50.8,fiveWickets:7}},
+{id:'hold',  name:'Michael Holding',  nation:'WI', era:'1975–87',pos:'SEAM',color:NC.WI, stats:{wickets:249,bowlAvg:23.68,strikeRate:50.9,fiveWickets:13}},
+{id:'robe',  name:'Andy Roberts',     nation:'WI', era:'1974–83',pos:'SEAM',color:NC.WI, stats:{wickets:202,bowlAvg:25.61,strikeRate:55.1,fiveWickets:11}},
+{id:'ambr',  name:'Curtly Ambrose',   nation:'WI', era:'1988–00',pos:'SEAM',color:NC.WI, stats:{wickets:405,bowlAvg:20.99,strikeRate:54.6,fiveWickets:22}},
+{id:'wals',  name:'Courtney Walsh',   nation:'WI', era:'1984–01',pos:'SEAM',color:NC.WI, stats:{wickets:519,bowlAvg:24.44,strikeRate:57.8,fiveWickets:22}},
+{id:'lill',  name:'Dennis Lillee',    nation:'AUS',era:'1971–84',pos:'SEAM',color:NC.AUS,stats:{wickets:355,bowlAvg:23.92,strikeRate:52.0,fiveWickets:23}},
+{id:'thom',  name:'Jeff Thomson',     nation:'AUS',era:'1972–85',pos:'SEAM',color:NC.AUS,stats:{wickets:200,bowlAvg:28.00,strikeRate:52.7,fiveWickets:8}},
+{id:'true',  name:'Fred Trueman',     nation:'ENG',era:'1952–65',pos:'SEAM',color:NC.ENG,stats:{wickets:307,bowlAvg:21.57,strikeRate:49.4,fiveWickets:17}},
+{id:'stat',  name:'Brian Statham',    nation:'ENG',era:'1951–65',pos:'SEAM',color:NC.ENG,stats:{wickets:252,bowlAvg:24.84,strikeRate:63.8,fiveWickets:9}},
+{id:'will_b',name:'Bob Willis',       nation:'ENG',era:'1971–84',pos:'SEAM',color:NC.ENG,stats:{wickets:325,bowlAvg:25.20,strikeRate:53.4,fiveWickets:16}},
+{id:'tyso',  name:'Frank Tyson',      nation:'ENG',era:'1954–59',pos:'SEAM',color:NC.ENG,stats:{wickets:76, bowlAvg:18.56,strikeRate:45.4,fiveWickets:4}},
+{id:'beds',  name:'Alec Bedser',      nation:'ENG',era:'1946–55',pos:'SEAM',color:NC.ENG,stats:{wickets:236,bowlAvg:24.89,strikeRate:67.4,fiveWickets:15}},
+{id:'lind',  name:'Ray Lindwall',     nation:'AUS',era:'1945–60',pos:'SEAM',color:NC.AUS,stats:{wickets:228,bowlAvg:23.03,strikeRate:58.0,fiveWickets:12}},
+{id:'ande',  name:'James Anderson',   nation:'ENG',era:'2003–24',pos:'SEAM',color:NC.ENG,stats:{wickets:704,bowlAvg:26.45,strikeRate:56.0,fiveWickets:32}},
+{id:'broa',  name:'Stuart Broad',     nation:'ENG',era:'2007–23',pos:'SEAM',color:NC.ENG,stats:{wickets:604,bowlAvg:27.68,strikeRate:55.1,fiveWickets:20}},
+{id:'harm',  name:'Steve Harmison',   nation:'ENG',era:'2002–09',pos:'SEAM',color:NC.ENG,stats:{wickets:226,bowlAvg:31.82,strikeRate:55.0,fiveWickets:8}},
+{id:'gough', name:'Darren Gough',     nation:'ENG',era:'1994–03',pos:'SEAM',color:NC.ENG,stats:{wickets:229,bowlAvg:28.39,strikeRate:51.0,fiveWickets:9}},
+{id:'stey',  name:'Dale Steyn',       nation:'SA', era:'2004–19',pos:'SEAM',color:NC.SA, stats:{wickets:439,bowlAvg:22.95,strikeRate:42.3,fiveWickets:26}},
+{id:'dona',  name:'Allan Donald',     nation:'SA', era:'1992–02',pos:'SEAM',color:NC.SA, stats:{wickets:330,bowlAvg:22.25,strikeRate:47.0,fiveWickets:20}},
+{id:'ntin',  name:'Makhaya Ntini',    nation:'SA', era:'1998–09',pos:'SEAM',color:NC.SA, stats:{wickets:390,bowlAvg:28.82,strikeRate:53.4,fiveWickets:18}},
+{id:'raba',  name:'Kagiso Rabada',    nation:'SA', era:'2015–24',pos:'SEAM',color:NC.SA, stats:{wickets:301,bowlAvg:22.01,strikeRate:42.6,fiveWickets:17}},
+{id:'vaas',  name:'Chaminda Vaas',    nation:'SL', era:'1994–09',pos:'SEAM',color:NC.SL, stats:{wickets:355,bowlAvg:29.58,strikeRate:66.0,fiveWickets:12}},
+{id:'zahe',  name:'Zaheer Khan',      nation:'IND',era:'2000–14',pos:'SEAM',color:NC.IND,stats:{wickets:311,bowlAvg:32.95,strikeRate:60.4,fiveWickets:11}},
+{id:'srin',  name:'Javagal Srinath',  nation:'IND',era:'1991–02',pos:'SEAM',color:NC.IND,stats:{wickets:236,bowlAvg:30.49,strikeRate:64.0,fiveWickets:10}},
+{id:'bumu',  name:'Jasprit Bumrah',   nation:'IND',era:'2018–24',pos:'SEAM',color:NC.IND,stats:{wickets:234,bowlAvg:19.79,strikeRate:42.9,fiveWickets:16}},
+{id:'john_m',name:'Mitchell Johnson', nation:'AUS',era:'2007–15',pos:'SEAM',color:NC.AUS,stats:{wickets:313,bowlAvg:28.40,strikeRate:51.1,fiveWickets:12}},
+{id:'star',  name:'Mitchell Starc',   nation:'AUS',era:'2011–24',pos:'SEAM',color:NC.AUS,stats:{wickets:433,bowlAvg:26.51,strikeRate:46.3,fiveWickets:18}},
+{id:'cumm',  name:'Pat Cummins',      nation:'AUS',era:'2011–24',pos:'SEAM',color:NC.AUS,stats:{wickets:315,bowlAvg:22.05,strikeRate:45.7,fiveWickets:14}},
+{id:'haze',  name:'Josh Hazlewood',   nation:'AUS',era:'2014–24',pos:'SEAM',color:NC.AUS,stats:{wickets:295,bowlAvg:24.21,strikeRate:52.3,fiveWickets:13}},
+{id:'lee',   name:'Brett Lee',        nation:'AUS',era:'1999–08',pos:'SEAM',color:NC.AUS,stats:{wickets:310,bowlAvg:30.81,strikeRate:53.3,fiveWickets:10}},
+{id:'gill',  name:'Jason Gillespie',  nation:'AUS',era:'1996–06',pos:'SEAM',color:NC.AUS,stats:{wickets:259,bowlAvg:26.13,strikeRate:54.9,fiveWickets:8}},
+{id:'boul',  name:'Trent Boult',      nation:'NZ', era:'2011–22',pos:'SEAM',color:NC.NZ, stats:{wickets:317,bowlAvg:27.49,strikeRate:54.9,fiveWickets:10}},
+{id:'sout',  name:'Tim Southee',      nation:'NZ', era:'2008–24',pos:'SEAM',color:NC.NZ, stats:{wickets:391,bowlAvg:30.26,strikeRate:60.1,fiveWickets:15}},
+{id:'wagn',  name:'Neil Wagner',      nation:'NZ', era:'2012–24',pos:'SEAM',color:NC.NZ, stats:{wickets:260,bowlAvg:27.57,strikeRate:52.8,fiveWickets:9}},
+{id:'roac',  name:'Kemar Roach',      nation:'WI', era:'2009–24',pos:'SEAM',color:NC.WI, stats:{wickets:294,bowlAvg:27.10,strikeRate:52.4,fiveWickets:12}},
+{id:'bish',  name:'Ian Bishop',       nation:'WI', era:'1988–98',pos:'SEAM',color:NC.WI, stats:{wickets:161,bowlAvg:24.27,strikeRate:52.2,fiveWickets:6}},
+{id:'crof',  name:'Colin Croft',      nation:'WI', era:'1977–82',pos:'SEAM',color:NC.WI, stats:{wickets:125,bowlAvg:23.30,strikeRate:49.3,fiveWickets:5}},
+{id:'hall',  name:'Wes Hall',         nation:'WI', era:'1958–69',pos:'SEAM',color:NC.WI, stats:{wickets:192,bowlAvg:26.38,strikeRate:54.3,fiveWickets:9}},
+{id:'akht',  name:'Shoaib Akhtar',    nation:'PAK',era:'1997–07',pos:'SEAM',color:NC.PAK,stats:{wickets:178,bowlAvg:25.69,strikeRate:45.8,fiveWickets:12}},
+{id:'asif',  name:'Mohammad Asif',    nation:'PAK',era:'2005–10',pos:'SEAM',color:NC.PAK,stats:{wickets:103,bowlAvg:23.18,strikeRate:48.5,fiveWickets:7}},
+{id:'sham',  name:'Mohammad Shami',   nation:'IND',era:'2013–24',pos:'SEAM',color:NC.IND,stats:{wickets:229,bowlAvg:27.71,strikeRate:50.3,fiveWickets:6}},
+{id:'isha',  name:'Ishant Sharma',    nation:'IND',era:'2007–21',pos:'SEAM',color:NC.IND,stats:{wickets:311,bowlAvg:32.40,strikeRate:61.6,fiveWickets:11}},
+{id:'larwood',name:'Harold Larwood',  nation:'ENG',era:'1926–33',pos:'SEAM',color:NC.ENG,stats:{wickets:78, bowlAvg:28.35,strikeRate:63.7,fiveWickets:4}},
+{id:'gabr',  name:'Shannon Gabriel',  nation:'WI', era:'2012–21',pos:'SEAM',color:NC.WI, stats:{wickets:166,bowlAvg:32.21,strikeRate:56.5,fiveWickets:6}},
+{id:'edwa_f',name:'Fidel Edwards',    nation:'WI', era:'2003–12',pos:'SEAM',color:NC.WI, stats:{wickets:165,bowlAvg:37.87,strikeRate:58.2,fiveWickets:12}},
+]
+
+// ═══════════════════════════════════════════════
+// STRATEGIES (like formations)
+// ═══════════════════════════════════════════════
+const STRATEGIES = {
+  balanced: { name:'Balanced XI',    slots:{ OPEN:2, MID:3, WK:1, AR:1, SEAM:2, SPIN:2 } },
+  pace:     { name:'Pace Attack',    slots:{ OPEN:2, MID:3, WK:1, AR:1, SEAM:3, SPIN:1 } },
+  spin:     { name:'Spin Assault',   slots:{ OPEN:2, MID:2, WK:1, AR:1, SEAM:2, SPIN:3 } },
+  allround: { name:'All-Round Power',slots:{ OPEN:2, MID:3, WK:1, AR:2, SEAM:2, SPIN:1 } },
+}
+
+const POS_LABEL = { OPEN:'OP', MID:'MI', WK:'WK', AR:'AR', SPIN:'SP', SEAM:'SM' }
+const POS_ORDER = ['OPEN','MID','WK','AR','SEAM','SPIN']
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  screen: 'intro',
+  strategy: 'balanced',
+  team: { OPEN:[], MID:[], WK:[], AR:[], SEAM:[], SPIN:[] },
+  spins: 0,
+  skips: 0,
+  currentPlayer: null,
+  isSpinning: false,
+  usedIds: new Set(),
+  usedNames: new Set(),
+  simResult: null,
+}
+const MAX_SKIPS = 5
+const ITEM_H = 160
+
+// ═══════════════════════════════════════════════
+// RATING ENGINE
+// ═══════════════════════════════════════════════
+function playerRating(p) {
+  const s = p.stats
+  switch(p.pos) {
+    case 'OPEN': return Math.min(1, (s.avg/62)*0.50 + (s.centuries/28)*0.30 + (s.runs/11000)*0.20)
+    case 'MID':  return Math.min(1, (s.avg/70)*0.50 + (s.centuries/40)*0.30 + (s.runs/13000)*0.20)
+    case 'WK':   return Math.min(1, (s.dismissals/480)*0.35 + (s.avg/50)*0.45 + (s.runs/6000)*0.20)
+    case 'AR':   return Math.min(1, (s.batAvg/55)*0.35 + (s.wickets/380)*0.30 + Math.max(0,(38-s.bowlAvg)/18)*0.35)
+    case 'SPIN': return Math.min(1, (s.wickets/700)*0.40 + Math.max(0,(36-s.bowlAvg)/16)*0.40 + Math.max(0,(80-s.strikeRate)/60)*0.20)
+    case 'SEAM': return Math.min(1, (s.wickets/500)*0.40 + Math.max(0,(32-s.bowlAvg)/12)*0.40 + Math.max(0,(62-s.strikeRate)/22)*0.20)
+  }
+  return 0
+}
+
+function calcRatings(team) {
+  const allSlots = Object.values(team).flat().filter(Boolean)
+  if (!allSlots.length) return { bat:0, bowl:0, bal:0 }
+
+  // Batting: openers + middle + WK + AR batting contribution
+  const batSpecialists = [...(team.OPEN||[]), ...(team.MID||[]), ...(team.WK||[])].filter(Boolean)
+  const arPlayers = (team.AR||[]).filter(Boolean)
+
+  function batRating(p) {
+    if (p.pos==='WK') return Math.min(1,(p.stats.avg/50)*0.85)
+    return playerRating(p)
+  }
+  function arBatRating(p) { return Math.min(1,(p.stats.batAvg/52)*0.80) }
+  function arBowlRating(p) {
+    return Math.min(1,(p.stats.wickets/380)*0.45 + Math.max(0,(38-p.stats.bowlAvg)/18)*0.55)
+  }
+
+  // Pure bowlers
+  const seamers = (team.SEAM||[]).filter(Boolean)
+  const spinners = (team.SPIN||[]).filter(Boolean)
+  function bowlRating(p) { return playerRating(p) }
+
+  const batSum = batSpecialists.reduce((s,p)=>s+batRating(p),0)
+    + arPlayers.reduce((s,p)=>s+arBatRating(p),0)
+  const batCount = batSpecialists.length + arPlayers.length
+
+  const bowlSum = seamers.reduce((s,p)=>s+bowlRating(p),0)
+    + spinners.reduce((s,p)=>s+bowlRating(p),0)
+    + arPlayers.reduce((s,p)=>s+arBowlRating(p)*0.65,0)
+  const bowlCount = seamers.length + spinners.length + arPlayers.length
+
+  const bat = batCount ? batSum/batCount : 0
+  const bowl = bowlCount ? bowlSum/bowlCount : 0
+  const bal = bat*0.50 + bowl*0.50
+  return {
+    bat: Math.min(1, bat),
+    bowl: Math.min(1, bowl),
+    bal: Math.min(1, bal)
+  }
+}
+
+// Normal distribution approximation (Box-Muller)
+function normalRnd(mean, std) {
+  let u=0,v=0
+  while(!u) u=Math.random()
+  while(!v) v=Math.random()
+  const z = Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)
+  return Math.max(0, mean + z*std)
+}
+
+function simulateSeries(team, runs=5) {
+  const { bat, bowl } = calcRatings(team)
+  let totW=0, totD=0, totL=0
+
+  for (let r=0; r<runs; r++) {
+    const opps = [
+      // 4 weak
+      {a:0.18+Math.random()*0.12, d:0.18+Math.random()*0.12},
+      {a:0.20+Math.random()*0.10, d:0.20+Math.random()*0.10},
+      {a:0.22+Math.random()*0.13, d:0.22+Math.random()*0.13},
+      {a:0.24+Math.random()*0.11, d:0.24+Math.random()*0.11},
+      // 4 medium
+      {a:0.48+Math.random()*0.14, d:0.48+Math.random()*0.14},
+      {a:0.50+Math.random()*0.16, d:0.50+Math.random()*0.16},
+      {a:0.52+Math.random()*0.14, d:0.52+Math.random()*0.14},
+      {a:0.54+Math.random()*0.12, d:0.54+Math.random()*0.12},
+      // 4 elite
+      {a:0.72+Math.random()*0.13, d:0.72+Math.random()*0.13},
+      {a:0.74+Math.random()*0.11, d:0.74+Math.random()*0.11},
+      {a:0.76+Math.random()*0.12, d:0.76+Math.random()*0.12},
+      {a:0.78+Math.random()*0.10, d:0.78+Math.random()*0.10},
+    ]
+    opps.sort(()=>Math.random()-0.5)
+
+    let w=0,d=0,l=0
+    for (const opp of opps) {
+      const lFor = Math.max(100, bat*380*(1-opp.d*0.58)+60)
+      const lAgainst = Math.max(50, opp.a*330*(1-bowl*0.68))
+      const runsFor = normalRnd(lFor, lFor*0.28)
+      const runsAgainst = normalRnd(lAgainst, lAgainst*0.28)
+      const diff = runsFor - runsAgainst
+      if (diff > 65) w++
+      else if (diff < -65) l++
+      else d++
+    }
+    totW+=w; totD+=d; totL+=l
+  }
+
+  const wins = Math.round(totW/runs)
+  const draws = Math.round(totD/runs)
+  const losses = Math.round(totL/runs)
+  const pts = wins*3 + draws
+  const { bat:teamBat, bowl:teamBowl, bal } = calcRatings(team)
+  return { wins, draws, losses, pts, teamBat, teamBowl, bal }
+}
+
+// ═══════════════════════════════════════════════
+// GAME HELPERS
+// ═══════════════════════════════════════════════
+function slots() { return STRATEGIES[state.strategy].slots }
+function slotCount(pos) { return slots()[pos] || 0 }
+function placed(pos) { return state.team[pos].filter(Boolean).length }
+function isPosFull(pos) { return placed(pos) >= slotCount(pos) }
+function teamSize() { return Object.values(state.team).flat().filter(Boolean).length }
+function isTeamComplete() { return teamSize() === 11 }
+function skipsLeft() { return MAX_SKIPS - state.skips }
+
+function neededPositions() {
+  return POS_ORDER.filter(p => !isPosFull(p))
+}
+
+function buildSpinPool() {
+  const needed = neededPositions()
+  return PLAYERS.filter(p =>
+    needed.includes(p.pos) &&
+    !state.usedIds.has(p.id) &&
+    !state.usedNames.has(p.name)
+  )
+}
+
+// ═══════════════════════════════════════════════
+// SLOT MACHINE
+// ═══════════════════════════════════════════════
+const ITEM_H_PX = ITEM_H
+
+function makeSlotEl(p) {
+  const el = document.createElement('div')
+  el.className = 'slot-item'
+  el.style.height = ITEM_H_PX + 'px'
+  el.innerHTML = `
+    <div class="slot-pos" style="background:${p.color}22;color:${p.color}">${POS_LABEL[p.pos]}</div>
+    <div class="slot-name">${p.name}</div>
+    <div class="slot-nation">${p.nation} · ${p.era}</div>
+  `
+  return el
+}
+
+function doSpin() {
+  if (state.isSpinning || isTeamComplete()) return
+  const pool = buildSpinPool()
+  if (!pool.length) return
+
+  state.isSpinning = true
+  state.spins++
+  document.getElementById('btn-spin').disabled = true
+  document.getElementById('reveal-card').classList.remove('visible')
+
+  const target = pool[Math.floor(Math.random()*pool.length)]
+  const fillers = PLAYERS.filter(p=>p.id!==target.id).sort(()=>Math.random()-0.5).slice(0,12)
+  const allItems = [...fillers, target]
+
+  const track = document.getElementById('slot-track')
+  track.innerHTML = ''
+  track.style.transition = 'none'
+  track.style.transform = 'translateY(0)'
+  allItems.forEach(p => track.appendChild(makeSlotEl(p)))
+
+  const totalH = allItems.length * ITEM_H_PX
+  const finalPos = -(12 * ITEM_H_PX) + (ITEM_H_PX/2 - ITEM_H_PX/2)
+  const midPos = finalPos + ITEM_H_PX * 4
+
+  requestAnimationFrame(() => {
+    track.style.transition = 'transform 0.35s linear'
+    track.style.transform = `translateY(${midPos}px)`
+    setTimeout(() => {
+      track.style.transition = 'transform 0.65s cubic-bezier(0.25,1,0.5,1)'
+      track.style.transform = `translateY(${finalPos}px)`
+      setTimeout(() => {
+        state.isSpinning = false
+        state.currentPlayer = target
+        revealPlayer(target)
+        updateUI()
+      }, 700)
+    }, 380)
+  })
+}
+
+function revealPlayer(p) {
+  const card = document.getElementById('reveal-card')
+  card.classList.add('visible')
+  card.style.background = p.color + '18'
+  card.style.borderColor = p.color + '60'
+
+  document.getElementById('rv-badge').style.background = p.color
+  document.getElementById('rv-badge').textContent = POS_LABEL[p.pos]
+  document.getElementById('rv-name').textContent = p.name
+  document.getElementById('rv-meta').textContent = `${p.nation} · ${p.era} · ${p.pos==='OPEN'?'Opener':p.pos==='MID'?'Middle Order':p.pos==='WK'?'Wicketkeeper':p.pos==='AR'?'All-Rounder':p.pos==='SPIN'?'Spinner':'Seamer'}`
+
+  // stats
+  const statsEl = document.getElementById('rv-stats')
+  statsEl.innerHTML = ''
+  function chip(val,lbl) {
+    return `<div class="stat-chip"><div class="stat-val">${val}</div><div class="stat-lbl">${lbl}</div></div>`
+  }
+  const s = p.stats
+  if (p.pos==='OPEN'||p.pos==='MID') {
+    statsEl.innerHTML = chip(s.avg.toFixed(2),'Avg')+chip(s.runs.toLocaleString(),'Runs')+chip(s.centuries,'100s')+chip(s.fifties,'50s')
+  } else if (p.pos==='WK') {
+    statsEl.innerHTML = chip(s.dismissals,'Dismissals')+chip(s.avg.toFixed(2),'Avg')+chip(s.centuries,'100s')+chip(s.fifties,'50s')
+  } else if (p.pos==='AR') {
+    statsEl.innerHTML = chip(s.batAvg.toFixed(2),'Bat Avg')+chip(s.centuries+'/'+(s.fifties),'100s/50s')+chip(s.wickets,'Wkts')+chip(s.fiveWickets,'5-fors')
+  } else {
+    statsEl.innerHTML = chip(s.wickets,'Wkts')+chip(s.bowlAvg.toFixed(2),'Bowl Avg')+chip(s.strikeRate.toFixed(1),'Bowl SR')+chip(s.fiveWickets,'5-fors')
+  }
+
+  const canAdd = !isPosFull(p.pos)
+  const note = document.getElementById('rv-note')
+  const btnA = document.getElementById('btn-accept')
+  const btnS = document.getElementById('btn-skip')
+
+  btnA.disabled = !canAdd
+  btnS.disabled = skipsLeft() <= 0
+
+  if (!canAdd) {
+    note.textContent = `${p.pos} slots full — skip or remove a player first`
+    note.classList.add('visible')
+  } else {
+    note.classList.remove('visible')
+  }
+
+  document.getElementById('btn-spin').disabled = false
+  updateUI()
+}
+
+function acceptPlayer() {
+  const p = state.currentPlayer
+  if (!p || isPosFull(p.pos)) return
+  const arr = state.team[p.pos]
+  const idx = arr.indexOf(null)
+  if (idx !== -1) arr[idx] = p; else arr.push(p)
+  state.usedIds.add(p.id)
+  state.usedNames.add(p.name)
+  state.currentPlayer = null
+  document.getElementById('reveal-card').classList.remove('visible')
+  updateUI()
+}
+
+function rejectPlayer() {
+  const p = state.currentPlayer
+  if (!p) return
+  const canAdd = !isPosFull(p.pos)
+  if (canAdd && skipsLeft() <= 0) return
+  if (canAdd) state.skips++
+  state.currentPlayer = null
+  document.getElementById('reveal-card').classList.remove('visible')
+  updateUI()
+}
+
+function removePlayer(pos, idx) {
+  if (skipsLeft() <= 0) {
+    alert('No skips left — cannot remove a player.')
+    return
+  }
+  state.team[pos][idx] = null
+  state.skips++
+  updateUI()
+}
+
+// ═══════════════════════════════════════════════
+// UI RENDERING
+// ═══════════════════════════════════════════════
+function updateUI() {
+  updateSkipDots()
+  updateLineup()
+  updateBars()
+  document.getElementById('spin-count-label').textContent = `Spins: ${state.spins}`
+  const rem = 11 - teamSize()
+  document.getElementById('slots-remaining').textContent = rem ? `${rem} slot${rem>1?'s':''} to fill` : 'XI complete!'
+  document.getElementById('btn-spin').disabled = state.isSpinning || isTeamComplete() || !buildSpinPool().length
+  document.getElementById('btn-simulate').disabled = !isTeamComplete()
+
+  // spin label
+  const needed = neededPositions()
+  if (isTeamComplete()) {
+    document.getElementById('spin-label').textContent = 'XI complete — simulate!'
+  } else {
+    const labels = needed.map(p=>({OPEN:'Opener',MID:'Middle',WK:'Wicketkeeper',AR:'All-Rounder',SPIN:'Spinner',SEAM:'Seamer'}[p]))
+    document.getElementById('spin-label').textContent = `Needs: ${labels.join(' · ')}`
+  }
+}
+
+function updateSkipDots() {
+  const el = document.getElementById('skip-dots')
+  el.innerHTML = ''
+  for (let i=0; i<MAX_SKIPS; i++) {
+    const dot = document.createElement('div')
+    dot.className = 'skip-dot ' + (i < state.skips ? 'used' : 'available')
+    el.appendChild(dot)
+  }
+}
+
+function updateLineup() {
+  const lineup = document.getElementById('lineup')
+  lineup.innerHTML = ''
+  let num = 1
+  const posNames = {OPEN:'Opener',MID:'Middle Order',WK:'Wicketkeeper',AR:'All-Rounder',SEAM:'Seamer',SPIN:'Spinner'}
+  const posOrBat = ['OPEN','MID','WK','AR','SEAM','SPIN']
+
+  for (const pos of posOrBat) {
+    const count = slotCount(pos)
+    for (let i=0; i<count; i++) {
+      const p = state.team[pos][i]
+      const row = document.createElement('div')
+      row.className = 'lineup-row' + (p ? '' : ' empty')
+      if (p) {
+        row.innerHTML = `
+          <div class="lineup-num">${num}</div>
+          <div class="lineup-badge" style="background:${p.color}">${POS_LABEL[pos]}</div>
+          <div class="lineup-info">
+            <div class="lineup-name">${p.name}</div>
+            <div class="lineup-sub">${p.nation} · ${p.era}</div>
+          </div>
+          <button class="remove-btn" onclick="removePlayer('${pos}',${i})">✕</button>
+        `
+      } else {
+        row.innerHTML = `
+          <div class="lineup-num">${num}</div>
+          <div class="lineup-badge" style="background:#1a3a5c;color:#5a7090">${POS_LABEL[pos]}</div>
+          <div class="lineup-info"><div class="lineup-name" style="color:#3a5a7a">${posNames[pos]}</div></div>
+        `
+      }
+      lineup.appendChild(row)
+      num++
+    }
+  }
+}
+
+function updateBars() {
+  const team = state.team
+  const allPlaced = Object.values(team).flat().filter(Boolean)
+  if (allPlaced.length < 2) {
+    ['bat','bowl','bal'].forEach(k=>{
+      document.getElementById('bar-'+k).style.width='0'
+      document.getElementById('val-'+k).textContent='–'
+    })
+    document.getElementById('projection').textContent = ''
+    return
+  }
+  const r = calcRatings(team)
+  document.getElementById('bar-bat').style.width=(r.bat*100)+'%'
+  document.getElementById('bar-bowl').style.width=(r.bowl*100)+'%'
+  document.getElementById('bar-bal').style.width=(r.bal*100)+'%'
+  document.getElementById('val-bat').textContent=Math.round(r.bat*100)
+  document.getElementById('val-bowl').textContent=Math.round(r.bowl*100)
+  document.getElementById('val-bal').textContent=Math.round(r.bal*100)
+
+  if (allPlaced.length >= 4) {
+    const proj = simulateSeries(team, 2)
+    document.getElementById('projection').innerHTML =
+      `~<span>${proj.wins}W ${proj.draws}D ${proj.losses}L</span> projected`
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SIMULATION & RESULTS
+// ═══════════════════════════════════════════════
+function runSimulation() {
+  if (!isTeamComplete()) return
+  const result = simulateSeries(state.team, 7)
+  state.simResult = result
+  showResults(result)
+}
+
+const HISTORICAL = [
+  { label:'1948 Invincibles (Aus)', pts:34 },
+  { label:'2004 Aus Peak (Ponting)', pts:33 },
+  { label:'1984 WI Blackwash', pts:32 },
+  { label:'2010–12 Eng #1 Side', pts:29 },
+  { label:'2003 SA Under Smith', pts:27 },
+  { label:'Good Test Nation', pts:22 },
+  { label:'Average Test Side', pts:17 },
+  { label:'Struggling Nation', pts:10 },
+]
+
+function showResults(result) {
+  showScreen('results')
+  document.getElementById('r-pts').textContent = result.pts
+  document.getElementById('r-w').textContent = result.wins
+  document.getElementById('r-d').textContent = result.draws
+  document.getElementById('r-l').textContent = result.losses
+
+  // verdict
+  let emoji, text, sub
+  if (result.pts >= 34) { emoji='🏆'; text='PERFECT SEASON — 12-0 LEGEND'; sub='An all-time XI for the ages. Untouchable.' }
+  else if (result.pts >= 30) { emoji='⭐'; text='Elite Test Side'; sub='Dominant — near-perfect. True greatness.' }
+  else if (result.pts >= 25) { emoji='🔥'; text='World-Class XI'; sub='Strong enough to win most series convincingly.' }
+  else if (result.pts >= 20) { emoji='✅'; text='Solid Test Nation'; sub='Competitive everywhere. A few slip-ups.' }
+  else if (result.pts >= 14) { emoji='🧩'; text='Work in Progress'; sub='Some great players, but gaps showing.' }
+  else { emoji='😬'; text='Must Do Better'; sub='Your XI needs more firepower.' }
+
+  document.getElementById('verdict').innerHTML = `
+    <div class="verdict-emoji">${emoji}</div>
+    <div class="verdict-text">${text}</div>
+    <div class="verdict-sub">${sub}</div>
+  `
+
+  // historical bars
+  const maxPts = 36
+  const histBars = document.getElementById('hist-bars')
+  histBars.innerHTML = ''
+  const allEntries = [...HISTORICAL, { label:'Your XI', pts:result.pts, you:true }]
+    .sort((a,b)=>b.pts-a.pts)
+  allEntries.forEach(e=>{
+    histBars.innerHTML += `
+      <div class="hist-bar-row">
+        <div class="hist-label" title="${e.label}">${e.label}</div>
+        <div class="hist-track"><div class="hist-fill${e.you?' you':''}" style="width:${(e.pts/maxPts*100).toFixed(1)}%"></div></div>
+        <div class="hist-pts">${e.pts} pts</div>
+      </div>
+    `
+  })
+
+  // squad
+  const squadList = document.getElementById('squad-list')
+  squadList.innerHTML = ''
+  const groupDef = {OPEN:'Openers',MID:'Middle Order',WK:'Wicketkeeper',AR:'All-Rounders',SEAM:'Seamers',SPIN:'Spinners'}
+  for (const pos of POS_ORDER) {
+    const players = state.team[pos].filter(Boolean)
+    if (!players.length) continue
+    const grp = document.createElement('div')
+    grp.className = 'squad-group'
+    grp.innerHTML = `<div class="squad-group-label">${groupDef[pos]}</div>`
+    players.forEach(p => {
+      grp.innerHTML += `
+        <div class="squad-player">
+          <div class="squad-badge" style="background:${p.color}">${POS_LABEL[pos]}</div>
+          <div class="squad-name">${p.name}</div>
+          <div class="squad-nation">${p.nation} · ${p.era}</div>
+        </div>
+      `
+    })
+    squadList.appendChild(grp)
+  }
+}
+
+function shareResult() {
+  const r = state.simResult
+  if (!r) return
+  const allPlayers = POS_ORDER.flatMap(pos => state.team[pos].filter(Boolean))
+  const lineup = allPlayers.map(p=>p.name).join(', ')
+  const text = `Test Match 12-0\n${r.wins}W-${r.draws}D-${r.losses}L (${r.pts}/36 pts)\nXI: ${lineup}\nBatting: ${Math.round(r.teamBat*100)} | Bowling: ${Math.round(r.teamBowl*100)}`
+  if (navigator.share) {
+    navigator.share({ title:'Test Match 12-0', text }).catch(()=>{})
+  } else {
+    navigator.clipboard?.writeText(text)
+    alert('Result copied to clipboard!')
+  }
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  state.screen = id
+}
+
+function startGame() {
+  const strat = state.strategy
+  const s = STRATEGIES[strat].slots
+  state.team = { OPEN:Array(s.OPEN).fill(null), MID:Array(s.MID).fill(null), WK:Array(s.WK).fill(null), AR:Array(s.AR).fill(null), SEAM:Array(s.SEAM).fill(null), SPIN:Array(s.SPIN).fill(null) }
+  state.spins = 0
+  state.skips = 0
+  state.currentPlayer = null
+  state.isSpinning = false
+  state.usedIds = new Set()
+  state.usedNames = new Set()
+  state.simResult = null
+  showScreen('game')
+  updateUI()
+}
+
+function resetGame() {
+  lbSubmittedThisRun = false
+  lbMyEntry = null
+  const btn = document.getElementById('lb-submit-btn')
+  if (btn) { btn.textContent = '🏅 Add to Leaderboard'; btn.disabled = false }
+  state.strategy = 'balanced'
+  document.querySelectorAll('.strat-card').forEach(c=>{
+    c.classList.toggle('selected', c.dataset.strat==='balanced')
+  })
+  showScreen('intro')
+}
+
+// ═══════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════
+const LB_API = '/.netlify/functions/cricket-leaderboard'
+let lbSubmittedThisRun = false
+let lbMyEntry = null
+
+function openSubmitModal() {
+  if (lbSubmittedThisRun) { openLeaderboardModal(); return }
+  document.getElementById('lb-name-input').value = ''
+  document.getElementById('lb-submit-msg').textContent = ''
+  document.getElementById('lb-submit-overlay').style.display = 'flex'
+  setTimeout(() => document.getElementById('lb-name-input').focus(), 100)
+}
+function closeLbSubmitBtn() { document.getElementById('lb-submit-overlay').style.display = 'none' }
+function closeLbSubmit(e) { if (e.target === document.getElementById('lb-submit-overlay')) closeLbSubmitBtn() }
+
+async function submitScore() {
+  const name = document.getElementById('lb-name-input').value.trim()
+  const msgEl = document.getElementById('lb-submit-msg')
+  if (!name) { msgEl.textContent = 'Please enter your name.'; return }
+
+  const r = state.simResult
+  if (!r) return
+
+  msgEl.style.color = 'var(--muted)'
+  msgEl.textContent = 'Submitting…'
+
+  try {
+    const res = await fetch(LB_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, points: r.pts, wins: r.wins, draws: r.draws, losses: r.losses, strategy: state.strategy }),
+    })
+    const data = await res.json()
+    if (!res.ok) { msgEl.style.color = 'var(--red)'; msgEl.textContent = data.error || 'Failed to submit.'; return }
+
+    lbSubmittedThisRun = true
+    lbMyEntry = { name, points: r.pts }
+    const btn = document.getElementById('lb-submit-btn')
+    btn.textContent = '✅ Submitted'
+    btn.disabled = true
+    document.getElementById('lb-submit-overlay').style.display = 'none'
+    openLeaderboardModal()
+  } catch (_) {
+    msgEl.style.color = 'var(--red)'
+    msgEl.textContent = 'Network error — please try again.'
+  }
+}
+
+async function openLeaderboardModal() {
+  document.getElementById('lb-view-overlay').style.display = 'flex'
+  document.getElementById('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px">Loading…</div>'
+  try {
+    const res = await fetch(LB_API)
+    const entries = await res.json()
+    renderLeaderboard(entries)
+  } catch (_) {
+    document.getElementById('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--red);padding:32px">Could not load leaderboard.</div>'
+  }
+}
+function closeLbViewBtn() { document.getElementById('lb-view-overlay').style.display = 'none' }
+function closeLbView(e) { if (e.target === document.getElementById('lb-view-overlay')) closeLbViewBtn() }
+
+function renderLeaderboard(entries) {
+  if (!entries.length) {
+    document.getElementById('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px">No entries yet — be the first!</div>'
+    return
+  }
+  const medals = ['🥇','🥈','🥉']
+  const header = `<div class="lb-header"><div></div><div>Name</div><div style="text-align:right">Pts</div><div style="text-align:right">W-D-L</div><div style="text-align:right">Date</div></div>`
+  const rows = entries.map((e, i) => {
+    const isMine = lbMyEntry && e.name === lbMyEntry.name && e.points === lbMyEntry.points
+    const rank = i < 3 ? medals[i] : `${i + 1}`
+    return `<div class="lb-row ${isMine ? 'lb-mine' : ''} ${i < 3 ? 'lb-top3' : ''}">
+      <div class="lb-rank">${rank}</div>
+      <div class="lb-name">${escHtml(e.name)}${isMine ? ' 👈' : ''}</div>
+      <div class="lb-pts">${e.points}</div>
+      <div class="lb-record">${e.wins}-${e.draws}-${e.losses}</div>
+      <div class="lb-date">${e.date || ''}</div>
+    </div>`
+  }).join('')
+  document.getElementById('lb-table-body').innerHTML = header + rows
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+// Strategy selection
+document.getElementById('strategy-grid').addEventListener('click', e => {
+  const card = e.target.closest('.strat-card')
+  if (!card) return
+  document.querySelectorAll('.strat-card').forEach(c=>c.classList.remove('selected'))
+  card.classList.add('selected')
+  state.strategy = card.dataset.strat
+})
+</script>
+</body>
+</html>
