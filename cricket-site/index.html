@@ -678,7 +678,7 @@ function simulateSeries(team, runs=7) {
 
   const wins = Math.round(totW/runs)
   const draws = Math.round(totD/runs)
-  const losses = Math.round(totL/runs)
+  const losses = 12 - wins - draws
   const pts = wins*3 + draws
   const { bat:teamBat, bowl:teamBowl, bal } = calcRatings(team)
   return { wins, draws, losses, pts, teamBat, teamBowl, bal }
