@@ -976,9 +976,10 @@ function showResults(result) {
 
   // verdict
   let emoji, text, sub
-  if (result.pts >= 34) { emoji='🏆'; text='PERFECT SEASON — 12-0 LEGEND'; sub='An all-time XI for the ages. Untouchable.' }
-  else if (result.pts >= 30) { emoji='⭐'; text='Elite Test Side'; sub='Dominant — near-perfect. True greatness.' }
-  else if (result.pts >= 25) { emoji='🔥'; text='World-Class XI'; sub='Strong enough to win most series convincingly.' }
+  if (result.pts === 36) { emoji='🏆'; text='PERFECT SEASON — 12-0 LEGEND'; sub='An all-time XI for the ages. Untouchable.' }
+  else if (result.pts >= 34) { emoji='⭐'; text='Elite Test Side'; sub='Dominant — near-perfect. True greatness.' }
+  else if (result.pts >= 30) { emoji='🔥'; text='World-Class XI'; sub='Strong enough to win most series convincingly.' }
+  else if (result.pts >= 25) { emoji='✅'; text='Solid Test Nation'; sub='Competitive everywhere. A few slip-ups.' }
   else if (result.pts >= 20) { emoji='✅'; text='Solid Test Nation'; sub='Competitive everywhere. A few slip-ups.' }
   else if (result.pts >= 14) { emoji='🧩'; text='Work in Progress'; sub='Some great players, but gaps showing.' }
   else { emoji='😬'; text='Must Do Better'; sub='Your XI needs more firepower.' }
