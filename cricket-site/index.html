@@ -199,6 +199,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#e8eaf
       <li>Spin to draw a random test great from history</li>
       <li>Accept or skip — only <strong>5 skips</strong> allowed</li>
       <li>Must include minimum 4 bowlers + 1 all-rounder</li>
+      <li>Maximum 4 players from any one nation</li>
       <li>Multiple spinners allowed (Spin Assault gets 3)</li>
       <li>Remove a placed player at the cost of 1 skip</li>
       <li>Simulate your XI against a full 12-match season</li>
@@ -691,6 +692,10 @@ function slots() { return STRATEGIES[state.strategy].slots }
 function slotCount(pos) { return slots()[pos] || 0 }
 function placed(pos) { return state.team[pos].filter(Boolean).length }
 function isPosFull(pos) { return placed(pos) >= slotCount(pos) }
+function nationCount(nation) {
+  return POS_ORDER.flatMap(pos => state.team[pos]).filter(p => p && p.nation === nation).length
+}
+function isNationFull(nation) { return nationCount(nation) >= 4 }
 function teamSize() { return Object.values(state.team).flat().filter(Boolean).length }
 function isTeamComplete() { return teamSize() === 11 }
 function skipsLeft() { return MAX_SKIPS - state.skips }
@@ -793,7 +798,7 @@ function revealPlayer(p) {
     statsEl.innerHTML = chip(s.wickets,'Wkts')+chip(s.bowlAvg.toFixed(2),'Bowl Avg')+chip(s.strikeRate.toFixed(1),'Bowl SR')+chip(s.fiveWickets,'5-fors')
   }
 
-  const canAdd = !isPosFull(p.pos)
+  const canAdd = !isPosFull(p.pos) && !isNationFull(p.nation)
   const note = document.getElementById('rv-note')
   const btnA = document.getElementById('btn-accept')
   const btnS = document.getElementById('btn-skip')
@@ -801,11 +806,14 @@ function revealPlayer(p) {
   btnA.disabled = !canAdd
   btnS.disabled = skipsLeft() <= 0
 
-  if (!canAdd) {
+  if (isNationFull(p.nation)) {
+    note.textContent = `Max 4 players per nation — already have 4 from ${p.nation}`
+    note.classList.add('visible')
+  } else if (!isPosFull(p.pos)) {
+    note.classList.remove('visible')
+  } else {
     note.textContent = `${p.pos} slots full — skip or remove a player first`
     note.classList.add('visible')
-  } else {
-    note.classList.remove('visible')
   }
 
   document.getElementById('btn-spin').disabled = false
@@ -814,7 +822,7 @@ function revealPlayer(p) {
 
 function acceptPlayer() {
   const p = state.currentPlayer
-  if (!p || isPosFull(p.pos)) return
+  if (!p || isPosFull(p.pos) || isNationFull(p.nation)) return
   const arr = state.team[p.pos]
   const idx = arr.indexOf(null)
   if (idx !== -1) arr[idx] = p; else arr.push(p)
