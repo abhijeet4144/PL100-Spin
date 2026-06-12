@@ -153,6 +153,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#e8eaf
   .action-row{flex-wrap:nowrap}
   .btn-accept{min-width:0}
 }
+.lb-row{display:grid;grid-template-columns:36px 1fr 56px 80px 80px;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;font-size:.85rem}
+.lb-row:nth-child(odd){background:rgba(255,255,255,.04)}
+.lb-row.lb-mine{background:rgba(96,208,240,.08);border:1px solid rgba(96,208,240,.25)}
+.lb-row.lb-top3{font-weight:700}
+.lb-rank{font-size:.78rem;color:var(--muted);text-align:center}
+.lb-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-pts{font-weight:800;color:var(--accent);text-align:right}
+.lb-record{color:var(--muted);font-size:.78rem;text-align:right}
+.lb-date{color:var(--muted);font-size:.72rem;text-align:right}
+.lb-header{display:grid;grid-template-columns:36px 1fr 56px 80px 80px;gap:8px;padding:6px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -279,6 +289,34 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#e8eaf
     <div class="result-actions">
       <button class="btn-secondary" onclick="resetGame()">Spin Again</button>
       <button class="btn-secondary" onclick="shareResult()">Share Result</button>
+      <button class="btn-secondary" id="lb-submit-btn" onclick="openSubmitModal()">🏅 Add to Leaderboard</button>
+      <button class="btn-secondary" onclick="openLeaderboardModal()">📋 Leaderboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUBMIT TO LEADERBOARD MODAL ── -->
+<div id="lb-submit-overlay" onclick="closeLbSubmit(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:28px;position:relative">
+    <button onclick="closeLbSubmitBtn()" style="position:absolute;top:14px;right:14px;background:var(--border);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem">✕</button>
+    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:6px">🏅 Add to Leaderboard</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">Enter your name to save your score. No anonymous entries.</p>
+    <input id="lb-name-input" type="text" maxlength="24" placeholder="Your name (max 24 chars)"
+      style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:#fff;font-size:.95rem;box-sizing:border-box;margin-bottom:12px"
+      onkeydown="if(event.key==='Enter')submitScore()">
+    <div id="lb-submit-msg" style="font-size:.82rem;color:var(--red);min-height:18px;margin-bottom:10px"></div>
+    <button class="btn-simulate" onclick="submitScore()" style="width:100%">Submit Score</button>
+  </div>
+</div>
+
+<!-- ── VIEW LEADERBOARD MODAL ── -->
+<div id="lb-view-overlay" onclick="closeLbView(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:660px;width:100%;padding:28px;position:relative;max-height:88vh;overflow-y:auto">
+    <button onclick="closeLbViewBtn()" style="position:absolute;top:14px;right:14px;background:var(--border);border:none;color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem">✕</button>
+    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:4px">📋 Leaderboard</h2>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:20px">Top 100 scores of all time</p>
+    <div id="lb-table-body">
+      <div style="text-align:center;color:var(--muted);padding:32px">Loading…</div>
     </div>
   </div>
 </div>
@@ -1020,11 +1058,104 @@ function startGame() {
 }
 
 function resetGame() {
+  lbSubmittedThisRun = false
+  lbMyEntry = null
+  const btn = document.getElementById('lb-submit-btn')
+  if (btn) { btn.textContent = '🏅 Add to Leaderboard'; btn.disabled = false }
   state.strategy = 'balanced'
   document.querySelectorAll('.strat-card').forEach(c=>{
     c.classList.toggle('selected', c.dataset.strat==='balanced')
   })
   showScreen('intro')
+}
+
+// ═══════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════
+const LB_API = '/.netlify/functions/cricket-leaderboard'
+let lbSubmittedThisRun = false
+let lbMyEntry = null
+
+function openSubmitModal() {
+  if (lbSubmittedThisRun) { openLeaderboardModal(); return }
+  document.getElementById('lb-name-input').value = ''
+  document.getElementById('lb-submit-msg').textContent = ''
+  document.getElementById('lb-submit-overlay').style.display = 'flex'
+  setTimeout(() => document.getElementById('lb-name-input').focus(), 100)
+}
+function closeLbSubmitBtn() { document.getElementById('lb-submit-overlay').style.display = 'none' }
+function closeLbSubmit(e) { if (e.target === document.getElementById('lb-submit-overlay')) closeLbSubmitBtn() }
+
+async function submitScore() {
+  const name = document.getElementById('lb-name-input').value.trim()
+  const msgEl = document.getElementById('lb-submit-msg')
+  if (!name) { msgEl.textContent = 'Please enter your name.'; return }
+
+  const r = state.simResult
+  if (!r) return
+
+  msgEl.style.color = 'var(--muted)'
+  msgEl.textContent = 'Submitting…'
+
+  try {
+    const res = await fetch(LB_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, points: r.pts, wins: r.wins, draws: r.draws, losses: r.losses, strategy: state.strategy }),
+    })
+    const data = await res.json()
+    if (!res.ok) { msgEl.style.color = 'var(--red)'; msgEl.textContent = data.error || 'Failed to submit.'; return }
+
+    lbSubmittedThisRun = true
+    lbMyEntry = { name, points: r.pts }
+    const btn = document.getElementById('lb-submit-btn')
+    btn.textContent = '✅ Submitted'
+    btn.disabled = true
+    document.getElementById('lb-submit-overlay').style.display = 'none'
+    openLeaderboardModal()
+  } catch (_) {
+    msgEl.style.color = 'var(--red)'
+    msgEl.textContent = 'Network error — please try again.'
+  }
+}
+
+async function openLeaderboardModal() {
+  document.getElementById('lb-view-overlay').style.display = 'flex'
+  document.getElementById('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px">Loading…</div>'
+  try {
+    const res = await fetch(LB_API)
+    const entries = await res.json()
+    renderLeaderboard(entries)
+  } catch (_) {
+    document.getElementById('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--red);padding:32px">Could not load leaderboard.</div>'
+  }
+}
+function closeLbViewBtn() { document.getElementById('lb-view-overlay').style.display = 'none' }
+function closeLbView(e) { if (e.target === document.getElementById('lb-view-overlay')) closeLbViewBtn() }
+
+function renderLeaderboard(entries) {
+  if (!entries.length) {
+    document.getElementById('lb-table-body').innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px">No entries yet — be the first!</div>'
+    return
+  }
+  const medals = ['🥇','🥈','🥉']
+  const header = `<div class="lb-header"><div></div><div>Name</div><div style="text-align:right">Pts</div><div style="text-align:right">W-D-L</div><div style="text-align:right">Date</div></div>`
+  const rows = entries.map((e, i) => {
+    const isMine = lbMyEntry && e.name === lbMyEntry.name && e.points === lbMyEntry.points
+    const rank = i < 3 ? medals[i] : `${i + 1}`
+    return `<div class="lb-row ${isMine ? 'lb-mine' : ''} ${i < 3 ? 'lb-top3' : ''}">
+      <div class="lb-rank">${rank}</div>
+      <div class="lb-name">${escHtml(e.name)}${isMine ? ' 👈' : ''}</div>
+      <div class="lb-pts">${e.points}</div>
+      <div class="lb-record">${e.wins}-${e.draws}-${e.losses}</div>
+      <div class="lb-date">${e.date || ''}</div>
+    </div>`
+  }).join('')
+  document.getElementById('lb-table-body').innerHTML = header + rows
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
 // Strategy selection
