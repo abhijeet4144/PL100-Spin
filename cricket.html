@@ -634,7 +634,7 @@ function normalRnd(mean, std) {
   return Math.max(0, mean + z*std)
 }
 
-function simulateSeries(team, runs=5) {
+function simulateSeries(team, runs=7) {
   const { bat, bowl } = calcRatings(team)
   let totW=0, totD=0, totL=0
 
@@ -660,9 +660,9 @@ function simulateSeries(team, runs=5) {
 
     let w=0,d=0,l=0
     for (const opp of opps) {
-      const lFor = Math.max(100, bat*380*(1-opp.d*0.58)+60)
-      const lAgainst = Math.max(50, opp.a*330*(1-bowl*0.68))
-      const runsFor = normalRnd(lFor, lFor*0.28)
+      const lFor = Math.max(100, bat*500*(1-opp.d*0.58)+60)
+      const lAgainst = Math.max(50, opp.a*330*(1-bowl*0.80))
+      const runsFor = normalRnd(lFor, lFor*0.18)
       const runsAgainst = normalRnd(lAgainst, lAgainst*0.28)
       const diff = runsFor - runsAgainst
       if (diff > 65) w++
