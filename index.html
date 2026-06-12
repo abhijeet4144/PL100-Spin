@@ -960,8 +960,9 @@ function simulateSeason(team, runs=3) {
   }
 
   const avg = key => Math.round(results.reduce((s,r)=>s+r[key],0)/runs);
+  const wins = avg('w'), draws = avg('d'), losses = avg('l');
   return {
-    points: avg('pts'), wins: avg('w'), draws: avg('d'), losses: avg('l'),
+    points: wins * 3 + draws, wins, draws, losses,
     goalsFor: avg('gf'), goalsAgainst: avg('ga'),
     teamAttack, teamDefense, teamControl
   };
