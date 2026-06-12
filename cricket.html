@@ -787,6 +787,7 @@ function rejectPlayer() {
   const p = state.currentPlayer
   if (!p) return
   const canAdd = !isPosFull(p.pos)
+  if (canAdd && skipsLeft() <= 0) return
   if (canAdd) state.skips++
   state.currentPlayer = null
   document.getElementById('reveal-card').classList.remove('visible')
