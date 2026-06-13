@@ -563,6 +563,7 @@ let state = {
   isSpinning: false,
   usedIds: new Set(),
   usedNames: new Set(),
+  skippedIds: new Set(),
   simResult: null,
 }
 const MAX_SKIPS = 5
@@ -704,7 +705,8 @@ function buildSpinPool() {
   return PLAYERS.filter(p =>
     needed.includes(p.pos) &&
     !state.usedIds.has(p.id) &&
-    !state.usedNames.has(p.name)
+    !state.usedNames.has(p.name) &&
+    !state.skippedIds.has(p.id)
   )
 }
 
@@ -831,9 +833,10 @@ function acceptPlayer() {
 function rejectPlayer() {
   const p = state.currentPlayer
   if (!p) return
-  const canAdd = !isPosFull(p.pos)
+  const canAdd = !isPosFull(p.pos) && !isNationFull(p.nation)
   if (canAdd && skipsLeft() <= 0) return
   if (canAdd) state.skips++
+  state.skippedIds.add(p.id)
   state.currentPlayer = null
   document.getElementById('reveal-card').classList.remove('visible')
   updateUI()
@@ -1060,6 +1063,7 @@ function startGame() {
   state.isSpinning = false
   state.usedIds = new Set()
   state.usedNames = new Set()
+  state.skippedIds = new Set()
   state.simResult = null
   showScreen('game')
   updateUI()
