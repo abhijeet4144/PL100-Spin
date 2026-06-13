@@ -214,16 +214,20 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 @keyframes countUp{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 .count-up{animation:countUp .4s ease forwards}
 /* ── LEADERBOARD ── */
-.lb-row{display:grid;grid-template-columns:36px 1fr 56px 80px 80px;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;font-size:.85rem}
+.lb-row{display:grid;grid-template-columns:36px 1fr 48px 72px 72px;align-items:center;gap:6px;padding:10px 12px;border-radius:8px;font-size:.85rem}
 .lb-row:nth-child(odd){background:rgba(255,255,255,.04)}
 .lb-row.lb-mine{background:rgba(0,255,135,.08);border:1px solid rgba(0,255,135,.25)}
 .lb-row.lb-top3{font-weight:700}
 .lb-rank{font-size:.78rem;color:var(--muted);text-align:center}
-.lb-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .lb-pts{font-weight:800;color:var(--accent);text-align:right}
 .lb-record{color:var(--muted);font-size:.78rem;text-align:right}
 .lb-date{color:var(--muted);font-size:.72rem;text-align:right}
-.lb-header{display:grid;grid-template-columns:36px 1fr 56px 80px 80px;gap:8px;padding:6px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:6px}
+.lb-header{display:grid;grid-template-columns:36px 1fr 48px 72px 72px;gap:6px;padding:6px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:6px}
+@media(max-width:480px){
+  .lb-row,.lb-header{grid-template-columns:32px 1fr 44px 60px;gap:4px}
+  .lb-date,.lb-header .lb-date-hdr{display:none}
+}
 #lb-submit-overlay.open,#lb-view-overlay.open{display:flex}
 
 /* ── RESPONSIVE ── */
