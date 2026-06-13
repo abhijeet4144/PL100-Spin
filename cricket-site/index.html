@@ -210,7 +210,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#e8eaf
 <!-- GAME -->
 <div id="game" class="screen">
   <div id="spin-panel">
-    <div class="slot-label" id="spin-label">Spin for a player</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+      <div class="slot-label" id="spin-label" style="margin-bottom:0">Spin for a player</div>
+      <button onclick="confirmRestart()" title="Restart game" style="background:none;border:none;color:#5a7090;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:6px;line-height:1;transition:.2s" onmouseover="this.style.color='#90a4c0'" onmouseout="this.style.color='#5a7090'">↺</button>
+    </div>
     <div class="slot-wrap">
       <div class="slot-track" id="slot-track"></div>
     </div>
@@ -1071,6 +1074,10 @@ function startGame() {
   state.simResult = null
   showScreen('game')
   updateUI()
+}
+
+function confirmRestart() {
+  if (confirm('Start over? Your current XI will be lost.')) resetGame()
 }
 
 function resetGame() {
