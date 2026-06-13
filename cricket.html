@@ -153,20 +153,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1628;color:#e8eaf
   .action-row{flex-wrap:nowrap}
   .btn-accept{min-width:0}
 }
-.lb-row{display:grid;grid-template-columns:36px 1fr 48px 72px 72px;align-items:center;gap:6px;padding:10px 12px;border-radius:8px;font-size:.85rem}
+.lb-row{display:grid;grid-template-columns:36px 1fr 56px;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;font-size:.85rem}
 .lb-row:nth-child(odd){background:rgba(255,255,255,.04)}
 .lb-row.lb-mine{background:rgba(96,208,240,.08);border:1px solid rgba(96,208,240,.25)}
 .lb-row.lb-top3{font-weight:700}
 .lb-rank{font-size:.78rem;color:var(--muted);text-align:center}
 .lb-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .lb-pts{font-weight:800;color:var(--accent);text-align:right}
-.lb-record{color:var(--muted);font-size:.78rem;text-align:right}
-.lb-date{color:var(--muted);font-size:.72rem;text-align:right}
-.lb-header{display:grid;grid-template-columns:36px 1fr 48px 72px 72px;gap:6px;padding:6px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:6px}
-@media(max-width:480px){
-  .lb-row,.lb-header{grid-template-columns:32px 1fr 44px 60px;gap:4px}
-  .lb-date,.lb-header .lb-date-hdr{display:none}
-}
+.lb-header{display:grid;grid-template-columns:36px 1fr 56px;gap:8px;padding:6px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -1153,7 +1147,7 @@ function renderLeaderboard(entries) {
     return
   }
   const medals = ['🥇','🥈','🥉']
-  const header = `<div class="lb-header"><div></div><div>Name</div><div style="text-align:right">Pts</div><div style="text-align:right">W-D-L</div><div style="text-align:right">Date</div></div>`
+  const header = `<div class="lb-header"><div></div><div>Name</div><div style="text-align:right">Pts</div></div>`
   const rows = entries.map((e, i) => {
     const isMine = lbMyEntry && e.name === lbMyEntry.name && e.points === lbMyEntry.points
     const rank = i < 3 ? medals[i] : `${i + 1}`
@@ -1161,8 +1155,6 @@ function renderLeaderboard(entries) {
       <div class="lb-rank">${rank}</div>
       <div class="lb-name">${escHtml(e.name)}${isMine ? ' 👈' : ''}</div>
       <div class="lb-pts">${e.points}</div>
-      <div class="lb-record">${e.wins}-${e.draws}-${e.losses}</div>
-      <div class="lb-date">${e.date || ''}</div>
     </div>`
   }).join('')
   document.getElementById('lb-table-body').innerHTML = header + rows
