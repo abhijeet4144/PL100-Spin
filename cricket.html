@@ -865,7 +865,7 @@ function updateUI() {
   document.getElementById('spin-count-label').textContent = `Spins: ${state.spins}`
   const rem = 11 - teamSize()
   document.getElementById('slots-remaining').textContent = rem ? `${rem} slot${rem>1?'s':''} to fill` : 'XI complete!'
-  document.getElementById('btn-spin').disabled = state.isSpinning || isTeamComplete() || !buildSpinPool().length
+  document.getElementById('btn-spin').disabled = state.isSpinning || isTeamComplete() || !buildSpinPool().length || !!state.currentPlayer
   document.getElementById('btn-simulate').disabled = !isTeamComplete()
 
   // spin label
