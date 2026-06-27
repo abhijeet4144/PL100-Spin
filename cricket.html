@@ -804,7 +804,7 @@ function revealPlayer(p) {
   const btnS = document.getElementById('btn-skip')
 
   btnA.disabled = !canAdd
-  btnS.disabled = skipsLeft() <= 0
+  btnS.disabled = canAdd && skipsLeft() <= 0
 
   if (isNationFull(p.nation)) {
     note.textContent = `Max 4 players per nation — already have 4 from ${p.nation}`
