@@ -736,6 +736,14 @@ function makeSlotEl(p) {
 
 function doSpin() {
   if (state.isSpinning || isTeamComplete()) return
+  // auto-dismiss a pending player that can't be added (nation/position full)
+  if (state.currentPlayer) {
+    const cp = state.currentPlayer
+    if (!isPosFull(cp.pos) && !isNationFull(cp.nation)) return
+    state.skippedIds.add(cp.id)
+    state.currentPlayer = null
+    document.getElementById('reveal-card').classList.remove('visible')
+  }
   const pool = buildSpinPool()
   if (!pool.length) return
 
@@ -869,7 +877,9 @@ function updateUI() {
   document.getElementById('spin-count-label').textContent = `Spins: ${state.spins}`
   const rem = 11 - teamSize()
   document.getElementById('slots-remaining').textContent = rem ? `${rem} slot${rem>1?'s':''} to fill` : 'XI complete!'
-  document.getElementById('btn-spin').disabled = state.isSpinning || isTeamComplete() || !buildSpinPool().length || !!state.currentPlayer
+  const _cp = state.currentPlayer
+  const _pendingCanAdd = _cp && !isPosFull(_cp.pos) && !isNationFull(_cp.nation)
+  document.getElementById('btn-spin').disabled = state.isSpinning || isTeamComplete() || !buildSpinPool().length || !!_pendingCanAdd
   document.getElementById('btn-simulate').disabled = !isTeamComplete()
 
   // spin label
